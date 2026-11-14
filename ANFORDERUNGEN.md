@@ -1,73 +1,75 @@
-# Midnight Organizer – Anforderungskatalog
+# Midnight Organizer – fortlaufende Anforderungen
 
-Stand: 14. November 2026 · Prototyp V4
+Stand: 14.11.2026 · V5-Prototyp
 
-## Leitidee
+## Leitbild
 
-Ein geteilter, räumlich erfahrbarer Kalender, der eher wie eine Spielwelt als wie Verwaltungssoftware wirkt. Direkte Manipulation statt Dialogwüsten. Alle Benutzer sind gleichberechtigt.
+Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trello-Kanban, sondern eine große zoomfähige Kalenderwelt mit direkter Bearbeitung. Gleichberechtigte Nutzer, flache Datenstruktur, möglichst keine Speichern- oder Bestätigungsdialoge. Tastatur und Maus sind gleichberechtigte Wege.
 
-## Zeitlandschaft und Navigation
+## Schreibtisch und Ideen sammeln
 
-- [x] SVG als skalierbare interaktive Arbeitsfläche in pywebview
-- [x] Frei verschiebbarer Kamerablick (Pan)
-- [x] Feiner stufenloser Mausradzoom zum Mauszeiger
-- [x] Feste semantische Stufen: Globus → Jahresdeck → Jahr → Monat → Woche → Tag
-- [x] Jeder Monat als horizontaler Tagestreifen mit 28–31 Tagen
-- [x] Zwölf Monatsstreifen bilden eine Jahres-Seite
-- [x] Fünf verblassende Jahresblätter davor und danach
-- [x] Blättern in beliebige vergangene und zukünftige Jahre
-- [x] Auswählbare Woche per Nebelrahmen und Pfeiltasten
-- [ ] Weiche animierte Kamerafahrten zwischen Ebenen, statt hartem Umschalten
-- [ ] Zoomstufen ohne Kamerasprung und mit persistentem geometrischen Fokus
-- [ ] Kontinuierliches Streaming/Caching von Jahres- und Kartendaten
-- [ ] Echte 2,5D-/3D-Kartenstapel mit räumlicher Tiefe und Animationen
-- [ ] Jahresdeck um animierten 3D-Globus mit Zeitzonenbändern
+- [x] Äußerste Ansicht als stilisierter SVG-Schreibtisch
+- [x] Sichtbarer Notizblock und Stift
+- [x] Notizen im Notizblock anlegen und lokal speichern
+- [x] Notiz in Jahr/Monat/Woche auf einen Tag ziehen und als Karte einplanen
+- [x] Einplanen per Schaltfläche ins fokussierte Datum
+- [x] Zeitung als anklickbares Objekt (bisher nur Platzhalter)
+- [ ] Schreibtisch als echtes grafisches 2,5D-/3D-Set mit Animation und Schatten
+- [ ] Notizen minutengenau durch Ziehen in Tages-/Stundenansicht positionieren
+- [ ] Website-Präsenz über Zeitung öffnen und bearbeiten
+- [ ] Notizen frei auf Papier legen, verschieben, verbinden und gruppieren
 
-## Globus, Jahreszeiten und Weltzeit
+## Welt, Kalender und Zoom
 
-- [x] Globus als äußerste Zoomstufe (schematische SVG-Illustration)
-- [x] Jahreskarten in einer umlaufenden Anordnung um den Globus
-- [x] Nord-/Südhalbkugel grob mit Sommer-/Wintertönung
-- [x] IANA-Zeitzonen pro Benutzer
-- [x] UTC-basierte Termindaten; lokale Uhrzeit pro Benutzer angezeigt
-- [x] Markierung lokaler Nächte und üblicher Arbeitszeiten im Tagesvergleich
-- [x] Optional ein-/ausblendbare Personenspalten
-- [ ] Korrekte geographische Land-/Zeitzonenkarte mit genauerem Sonnenstand
-- [ ] DST-Sonderfälle beim Erzeugen/Ändern von Terminen (fehlende/doppelte Lokalstunden)
-- [ ] Hilfestellung zu überlappenden Arbeitszeiten / Meetingvorschläge
-- [ ] Reisezeiten mit Ausgangs- und Zielzeitzone und lokaler Ankunftszeit
-- [ ] Vergleich verschiedener lokaler Kalendertage an den Datumsgrenzen
+- [x] SVG-Welt in pywebview, Verschieben und feines Mausrad-Zoomen
+- [x] Zoomstufen: Schreibtisch → Globus → Jahresdeck → Jahr → Monat → Woche → Tag
+- [x] Schematischer Globus mit Jahreskarten und jahreszeitlichen Farbtönen
+- [x] Jahre per Maus auswählen und per Pfeiltasten durchblättern, Enter öffnet Jahr
+- [x] 12 waagerechte Monatszeilen à 28/29/30/31 Tage
+- [x] 5 verblassende Jahres-Seiten davor und 5 danach (Demodarstellung)
+- [x] Datumsnavigation weit über angezeigte Jahre hinaus
+- [x] Wochenauswahl per transparentem Rahmen und Pfeiltasten
+- [ ] Stufenloses ineinander übergehendes Zooming ohne harte Perspektivsprünge
+- [ ] Animierte Kamerafahrten, echte Tiefenwirkung, 3D-Kartenstapel
+- [ ] Dynamisches Laden von serverseitigen Ereignissen mit Level of Detail und Caching
+- [ ] Reisezeit- und Meetingplanung über Länder hinweg
 
-## Kalenderinhalte
+## Termine, Aufgaben und Personen
 
-- [x] Persönliche, farblich getrennte Einträge
-- [x] Titel durch Klick direkt editierbar; beim Blur speichern
-- [x] Jahresübersicht mit farbigen Belegungsbalken nach Benutzer
-- [ ] Exakte mehrtägige von–bis-Balken auch bei Jahreszoom
-- [ ] Minutenraster und präzise Termine-Dauer durch Ziehen ändern
-- [ ] Karten per Drag-and-drop zwischen Zeiten, Tagen und Personen verschieben
-- [ ] Aufgaben ohne Datum im Vorratsbereich
-- [ ] Checklisten, Beschreibungen, Kommentare, Dateien, Zuständigkeiten
-- [ ] Undo/Redo für jede Änderung
-- [ ] Zoomabhängige Widgets/Checklisten/Datenfelder
+- [x] Farbig getrennte Demo-Personen: Berlin, Sydney, New York, Tokio, London
+- [x] UTC-Zeitpunkte, IANA-Zeitzonen und lokale Uhrzeitspalten in Tagesansicht (Demo)
+- [x] Nacht- und Arbeitszeitbereiche farblich hervorgehoben (Demo)
+- [x] Demo-Karten lassen sich inline umbenennen und lokal speichern
+- [x] Eigene Person und weitere Personen ein-/ausblenden
+- [ ] Personenkalender als frei sortierbare und räumlich stapelbare Tagesblätter
+- [ ] Präzise Stunden- und Minutenbearbeitung, Termine mit Ziehgriffen für Dauer
+- [ ] Einträge mit von–bis-Balken über Tage/Monate/Jahre
+- [ ] Autosave über zentrale API, Undo/Redo, Datenkonflikte transparent lösen
+- [ ] Nutzer einladen, Gruppen und Rollen, echte Mehrbenutzer-Synchronisierung
+- [ ] Private/gemeinsame Sichtbarkeit, Rechte und Änderungsverlauf
 
-## Zusammenarbeit / Clients
+## Papierwelt und Medien (nächste große Ausbaustufe)
 
-- [ ] Benutzerkonten und Gruppen, zunächst gleichberechtigt
-- [ ] Gemeinsame und private Kalender / Aufgaben
-- [ ] Python FastAPI Server mit SQLite, WebSockets und Echtzeit-Sync
-- [ ] Synchronisierung mehrerer Rechner, später Offline-Konfliktbehandlung
-- [ ] TUI/CLI zusätzlich zur SVG-Webansicht
-- [ ] pywebview Desktop, Browser, später Ionic/Capacitor Android
-- [ ] Sicherer Fernzugriff, Rechteverwaltung, Audit-Trail, Backups
+- [ ] Bei maximaler Annäherung an eine Stunde wird eine endlose Papierarbeitsfläche sichtbar
+- [ ] Kontinuierliche Zeitkoordinaten über Stunden- und Tagesgrenzen hinweg
+- [ ] Medienobjekte: Freitext, Karten, Fotos, Links, Audiodateien, Checklisten
+- [ ] Drag-and-drop und Autosave auf dieser Fläche
+- [ ] Audio (z.B. manuell exportierte WhatsApp-Sprachnachrichten) importieren und abspielen
+- [ ] Messenger-Anbindungen später separat planen, mit Berechtigungen/Datenschutz
 
-## Technischer Richtungsentscheid
+## Technische Basis
 
-SVG + Vanilla JavaScript für Darstellung/Interaktion, Python + pywebview als Desktop-Container. Anschließend FastAPI + SQLite als unabhängige Daten-/Sync-Schicht. Kein unnötiger Build-Prozess.
+- [x] Vanilla JavaScript + SVG + Python/pywebview, lokal ohne Buildprozess
+- [ ] Python FastAPI + SQLite mit Backups
+- [ ] WebSockets für geteilte Live-Ansichten
+- [ ] Datenspeicherung unabhängig von der Darstellung/Kamera
+- [ ] CLI/TUI und spätere Ionic/Capacitor-App auf derselben API
+- [ ] Testfälle für DST-Übergänge und internationale Datumsgrenzen
 
-## Prioritäten als nächstes
+## Priorisierte nächste Schritte
 
-1. Tagesansicht: minutengenaues Verschieben und Größe ändern, Zeitzonen-Mehrbenutzeransicht stabilisieren.
-2. Animierte Kamera über alle sechs Zoomstufen, kein harter Wechsel.
-3. Server-Datenmodell mit UTC-Zeit, IANA-Zeitzonen und Ereignisversionen (Konfliktprüfung).
-4. Meeting-Finder für gemeinsame humane Uhrzeiten.
+1. Echtes Datums-/Zeitmodell für Aufgaben und stufenübergreifendes Platzieren.
+2. Kamerafahrt zwischen Schreibtisch, Globus und Jahresdeck mit sanften Übergängen.
+3. Python-Backend mit SQLite statt browsergebundenem localStorage.
+4. Endlospapier und Medienablage.
+5. Gleichzeitige Benutzung mit individuellen Zeitzonen und Undo/Redo.

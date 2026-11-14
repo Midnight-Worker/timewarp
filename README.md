@@ -1,4 +1,6 @@
-# Midnight Organizer · Zeitplanet V4
+# Midnight Organizer V5 – Der Schreibtisch
+
+Ein experimenteller, lokaler SVG-Kalender für pywebview mit einer Schreibtisch-Startansicht, Notizblock, Zeitplanet, Jahresdeck und Kalenderansichten. Ohne npm oder Buildprozess.
 
 ## Start
 
@@ -7,40 +9,35 @@ pip install pywebview
 python main.py
 ```
 
-Oder `index.html` im Browser öffnen. Das Projekt benötigt keine JS-Pakete und lädt keine CDNs.
+Alternativ `index.html` direkt in Chrome/Chromium öffnen. Es wird noch **kein Server** gestartet.
+
+## Neu in V5
+
+- Neue äußerste Zoomstufe **Schreibtisch**: Planet, ein anklickbarer Notizzettel, Stift und Zeitung.
+- **Notizblock**: Freitext schreiben, Enter zum Anlegen, dauerhaft im lokalen Browserprofil gespeichert (localStorage).
+- **Notizen einplanen**: Im Notizblock `Heute` klicken (gewähltes Kalenderdatum) oder den Notiztext in Jahr-, Monats- oder Wochenansicht auf einen Tag ziehen. Beim Planen wird die Notiz aus der Sammlung entfernt.
+- **Globus**: Jahreskarten anklicken; ausgewähltes Jahr hervorgehoben. Pfeiltasten links/rechts wählen Jahre, Enter öffnet Jahresdeck.
+- **Zeitung**: Interaktive Attrappe, später Verbindung zur Website-Verwaltung.
 
 ## Bedienung
 
-- **Globus**: Jahresblätter schweben schematisch um die Erde; per Klick auf Jahreskarte öffnen
-- **Mausrad**: langsameres, stufenloses Zoomen um den Zeiger, nach größeren Schritten Übergang zur nächsten Ansicht
-- **Leere Fläche ziehen**: Kamera bewegen
-- **Ansichtsschalter**: Globus, Jahresdeck, Jahr, Monat, Woche, Tag
-- **← / →**: Im Monat die Woche auswählen, sonst den Zeitraum wechseln
-- **Enter**: markierte Woche öffnen
-- **Bild ↑ / Bild ↓**: vorheriger / nächster Zeitraum
-- **Esc**: eine Ansicht zurück
-- **Personen-Schaltflächen**: Benutzeransichten ein-/ausblenden (eigene Ebene bleibt)
-- **Karte klicken**: Titel direkt bearbeiten, mit Blur automatisch speichern
-- **Doppelklick in Tagesansicht**: neue Karte erzeugen
+| Aktion | Bedienung |
+|---|---|
+| Ansicht wählen | Buttons oben (Schreibtisch, Globus, Jahresdeck usw.) |
+| Zoomen | Mausrad über der Kalenderwelt, in kleinen Schritten |
+| Kamerablick verschieben | Leere Fläche ziehen |
+| Auf den Globus | Planet auf dem Schreibtisch anklicken |
+| Jahr wechseln | Globus: `←` / `→` oder Jahreskarte anklicken |
+| Jahr öffnen | Globus: `Enter` (oder Jahr anklicken) |
+| Notiz öffnen | Schreibtisch: Papier anklicken oder Button oben rechts |
+| Notiz erfassen | Im Notizblock tippen, `Enter` oder `+ Notiz hinzufügen` |
+| Notiz einplanen | Auf Kalendertag ziehen (Jahr / Monat / Woche), oder `Heute` klicken |
+| Karte bearbeiten | Karte anklicken, Text ändern, außerhalb klicken |
+| Ansicht zurück | `Esc` |
+| Jahr/Monat/Woche/Tag vor/zurück | `Bild ↓` / `Bild ↑` bzw. Pfeiltasten |
 
-## Was V4 demonstriert
+## Einschränkungen
 
-- Jahresdeck mit 5 Jahren davor und danach, neu erzeugt bei Navigation
-- Schematischer Globus, Nord-/Südhalbkugel mit jahreszeitlichen Farbtönen
-- Farbliche Benutzer-Zeitspuren auf Jahresblättern
-- Wochenrahmen und Kartendarstellung
-- Einblendbare Benutzer-Spalten im Tag; Berlins Zeitraster dient als gemeinsamer absoluter Referenzrahmen
-- Echte Zeitzonenkonvertierung über `Intl.DateTimeFormat` und IANA-Zonen (Europa/Berlin, Australia/Sydney, America/New_York, Asia/Tokyo, Europe/London)
-- Nächte und Arbeitszeiten 09–17 Uhr werden in jeder Benutzerzone verschieden schattiert
-- Karten werden mit UTC-Zeitstempeln gespeichert (lokal im jeweiligen Browserprofil)
+**Dies ist ein Bedienprototyp, kein gemeinsamer Produktivkalender.** Die Notizen und Termine liegen nur in `localStorage` dieses Browserprofils. Andere PCs teilen diese Daten nicht. Es gibt noch keine Anmeldung, Synchronisierung, Backups, echte Website-Bearbeitung oder freie Multimedia-Papierwelt. Planen aus der Sammlung erzeugt zunächst einen 60-Minuten-Termin um 10 Uhr Berliner Zeit. Die Zeit- und Zeitzonenansichten aus V4 sind weiterhin als Demo vorhanden. Keine Animationen oder WebGL-3D.
 
-## Bewusste Grenzen
-
-- SVG-Globus ist ein stilisiertes Diagramm, keine exakte Karte mit Zeitzonen-Grenzen.
-- Jahreszeiten folgen einer groben Monatsregel, keine meteorologische Echtzeitdarstellung.
-- Der Prototyp ist **kein** Multiuser-Backend: Personen sind Demo-Nutzer, Karten liegen nur in `localStorage`.
-- Kein Team-Login, Server, Remote-Sync oder Undo.
-- Es gibt im Tagesraster noch keine Drag-and-drop-Uhrzeitbearbeitung, keinen Minutensnap, keine DST-Fold-/Gap-Auswahl und keinen abgestimmten Meetingfinder.
-- Die Tagesansicht verwendet **eine gemeinsame Berliner Zeitachse**. Andere Spalten zeigen für dieselben absoluten Zeitpunkte lokale Uhrzeiten an. So stimmen die horizontalen Zeiten real überein.
-
-Siehe `ANFORDERUNGEN.md` für Konzept, offene Fragen und Roadmap.
+Wenn du das lokale Browserprofil löschst, gehen die Demo-Änderungen verloren. Vor produktiver Benutzung entwickeln wir FastAPI/SQLite mit Datensicherung.
