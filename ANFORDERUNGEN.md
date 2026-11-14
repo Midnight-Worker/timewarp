@@ -73,3 +73,27 @@ Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trell
 3. Python-Backend mit SQLite statt browsergebundenem localStorage.
 4. Endlospapier und Medienablage.
 5. Gleichzeitige Benutzung mit individuellen Zeitzonen und Undo/Redo.
+
+## V6: Endlospapier / persönliches Tagebuch (14.11.2026)
+
+- [x] Neue letzte Zoomstufe nach dem Tag: Endlospapier
+- [x] Frei bewegbare und zoombare Papierfläche mit Raster
+- [x] Einträge werden einem Kalenderdatum zugeordnet; Vor-/Zurückblättern tageweise
+- [x] Freitext und importierte Messenger-Textnachrichten als frei positionierbare Objekte
+- [x] Dateiablage für Fotos, Audio (z.B. exportierte WhatsApp-Sprachnachrichten), Videos, Word/Excel, PDFs und andere Dateien
+- [x] Drag-and-drop vom Desktop und Import über Dateiauswahl
+- [x] Bild- und andere Objektkarten per Ecke skalierbar, per Titel verschiebbar
+- [x] Audiodateien abspielen, Videos manuell abspielen; GIF-artige stumme Schleife pro Video ein-/ausschalten
+- [x] Hyperlinks ablegen und öffnen
+- [x] Optional Foto in Rich-Text-Notiz einsetzen und Text darum fließen lassen (links gefloatet)
+- [x] Ältere Notizblock-Stichpunkte in das Tagebuch übernehmen (Kopie, Ursprung bleibt erhalten)
+- [x] Dateimetadaten, Objekte, Positionen und Texte per lokalem HTTP-API und SQLite speichern, Medien im Dateisystem
+- [ ] Bildumfluss per frei definierbarem Polygon und exakt steuerbare Bilder im Text
+- [ ] Durchgehende raumzeitliche Papierkoordinaten ohne Tageswechsel (V6 nutzt datumsbezogene Seiten)
+- [ ] Geschichten mit Aufgaben/Kalenderkarten fest verknüpfen und zeitlich minutengenau einordnen
+- [ ] Automatischer Import von WhatsApp-Chats/Sprachnachrichten via autorisierter Schnittstelle
+- [ ] Vollwertige Vorschau/Bearbeitung für Office-Dateien
+- [ ] Nutzer-/Rechteverwaltung und gemeinsame Synchronisierung
+- [ ] Medien-Thumbnails, Suche, Rückgängig, Backups und Mehrgeräte-Datenaustausch
+
+**Sicherheitsstand:** V6 ist ein lokaler Einzelnutzer-Prototyp; der Python-Server bindet ausschließlich an 127.0.0.1. Kein öffentlicher Betrieb ohne Authentifizierung, Autorisierung und zusätzliche Absicherung.

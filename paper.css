@@ -1,0 +1,33 @@
+#paperOverlay{position:fixed;inset:0;z-index:8;display:none;overflow:hidden;background:#d6d0b9;color:#263344}
+#paperOverlay.active{display:block}
+#paperWorld{position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;cursor:grab;background-color:#eae4cf;background-image:linear-gradient(#9fa8a627 1px,transparent 1px),linear-gradient(90deg,#9fa8a627 1px,transparent 1px),repeating-linear-gradient(0deg,transparent 0px,transparent 26px,#6e9cbc16 27px);background-size:28px 28px,28px 28px,100% 28px}
+#paperWorld.panning{cursor:grabbing}
+#paperCanvas{position:absolute;top:0;left:0;transform-origin:0 0;min-width:100px;min-height:100px}
+.paper-item{position:absolute;min-width:170px;min-height:90px;border:1px solid #a49b85;background:#fffdf2;box-shadow:2px 8px 25px #48566a3a;border-radius:7px;resize:both;overflow:auto;display:flex;flex-direction:column;color:#233446}
+.paper-item:focus-within,.paper-item.selected{outline:2px solid #009a8f;z-index:5}
+.paper-item header{background:#e1dfd3;display:flex;align-items:center;gap:7px;padding:5px 9px;font:12px system-ui;cursor:move;user-select:none;touch-action:none;flex:none}
+.paper-item header span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paper-item header button{color:#546272;background:transparent;border:0;padding:0 5px}
+.paper-body{flex:1;padding:10px;min-height:40px;overflow:auto;font:15px/1.5 system-ui;overflow-wrap:anywhere}
+.paper-body[contenteditable]{outline:0;white-space:pre-wrap}
+.paper-body img.float-left{float:left;margin:4px 12px 8px 0;max-width:50%;height:auto;resize:both}
+.paper-body img.float-right{float:right;margin:4px 0 8px 12px;max-width:50%;height:auto}
+.paper-image{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.paper-item img.preview{width:100%;height:100%;object-fit:contain}
+.paper-item video{width:100%;max-height:100%;object-fit:contain;background:#121a2c}
+.paper-item audio{width:100%}
+.paper-item a{color:#176a8d}
+#paperToolbar{position:fixed;top:79px;left:15px;right:15px;z-index:12;display:flex;gap:5px;align-items:center;flex-wrap:wrap;background:#1a3039ee;border:1px solid #4f6871;border-radius:12px;padding:8px 10px;box-shadow:0 5px 22px #0004}
+#paperToolbar button{font-size:12px;padding:6px 9px}
+#paperToolbar label{font:12px system-ui;color:#c9e6de}
+#paperDay{background:#f2f4ee;border:1px solid #9eafa8;border-radius:6px;color:#1a3341;padding:6px;font:13px system-ui}
+#paperHint{position:fixed;bottom:18px;left:20px;color:#4d626d;background:#eee9dcdd;padding:7px 12px;border-radius:9px;z-index:12;font-size:12px}
+#paperMsg{color:#aeeccc;font-size:12px;margin-left:auto}
+#paperDrop{display:none;position:fixed;inset:115px 20px 25px;border:4px dashed #06a58d;border-radius:24px;background:#9ae5c24d;z-index:30;pointer-events:none;align-items:center;justify-content:center;font:700 27px system-ui;color:#165c55}
+#paperDrop.visible{display:flex}
+.paper-emoji{font-size:28px}
+.paper-file{display:flex;align-items:center;gap:9px;overflow-wrap:anywhere}
+@media(max-width:880px){#paperToolbar{top:120px}#paperHint{display:none}}
+
+body.paper-mode #top,body.paper-mode #tray,body.paper-mode #tip,body.paper-mode #bottom,body.paper-mode #notepad{display:none!important}
+body.paper-mode #paperToolbar{top:14px}

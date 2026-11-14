@@ -1,43 +1,47 @@
-# Midnight Organizer V5 – Der Schreibtisch
+# Midnight Organizer V6 — Endlospapier
 
-Ein experimenteller, lokaler SVG-Kalender für pywebview mit einer Schreibtisch-Startansicht, Notizblock, Zeitplanet, Jahresdeck und Kalenderansichten. Ohne npm oder Buildprozess.
+Der bisherige Schreibtisch, Zeitplanet und Kalender bleiben enthalten. **Neu:** die äußerste Detailstufe als verschiebbare Tagebuch-Papierfläche.
 
-## Start
+## Installation und Start
+
+Python 3.10+ erforderlich. Optional für eigenes Desktopfenster:
 
 ```bash
 pip install pywebview
 python main.py
 ```
 
-Alternativ `index.html` direkt in Chrome/Chromium öffnen. Es wird noch **kein Server** gestartet.
+Ohne pywebview reicht **`python main.py`**. Dann wird nach Möglichkeit der Browser geöffnet. Sonst die angezeigte Adresse aufrufen: **http://127.0.0.1:8877**.
 
-## Neu in V5
-
-- Neue äußerste Zoomstufe **Schreibtisch**: Planet, ein anklickbarer Notizzettel, Stift und Zeitung.
-- **Notizblock**: Freitext schreiben, Enter zum Anlegen, dauerhaft im lokalen Browserprofil gespeichert (localStorage).
-- **Notizen einplanen**: Im Notizblock `Heute` klicken (gewähltes Kalenderdatum) oder den Notiztext in Jahr-, Monats- oder Wochenansicht auf einen Tag ziehen. Beim Planen wird die Notiz aus der Sammlung entfernt.
-- **Globus**: Jahreskarten anklicken; ausgewähltes Jahr hervorgehoben. Pfeiltasten links/rechts wählen Jahre, Enter öffnet Jahresdeck.
-- **Zeitung**: Interaktive Attrappe, später Verbindung zur Website-Verwaltung.
+**Wichtig:** `index.html` nicht direkt als `file://` öffnen. Die neue Medienablage und SQLite laufen über den kleinen Python-Webserver.
 
 ## Bedienung
 
-| Aktion | Bedienung |
-|---|---|
-| Ansicht wählen | Buttons oben (Schreibtisch, Globus, Jahresdeck usw.) |
-| Zoomen | Mausrad über der Kalenderwelt, in kleinen Schritten |
-| Kamerablick verschieben | Leere Fläche ziehen |
-| Auf den Globus | Planet auf dem Schreibtisch anklicken |
-| Jahr wechseln | Globus: `←` / `→` oder Jahreskarte anklicken |
-| Jahr öffnen | Globus: `Enter` (oder Jahr anklicken) |
-| Notiz öffnen | Schreibtisch: Papier anklicken oder Button oben rechts |
-| Notiz erfassen | Im Notizblock tippen, `Enter` oder `+ Notiz hinzufügen` |
-| Notiz einplanen | Auf Kalendertag ziehen (Jahr / Monat / Woche), oder `Heute` klicken |
-| Karte bearbeiten | Karte anklicken, Text ändern, außerhalb klicken |
-| Ansicht zurück | `Esc` |
-| Jahr/Monat/Woche/Tag vor/zurück | `Bild ↓` / `Bild ↑` bzw. Pfeiltasten |
+1. Mit `Tag` zur Tagesansicht und mit dem Mausrad weiter hineinzoomen. Oder oben direkt **Endlospapier** anklicken.
+2. Auf **✎ Text** klicken und eine Tagebuchnotiz schreiben. Das Feld speichert automatisch.
+3. Dateien aus dem Explorer auf das Papier ziehen oder **+ Fotos / Dateien** verwenden. Unterstützt Bilder, Audiodateien, Videos, DOCX, XLSX, PDFs und andere Dateien bis zu 100 MB je Datei.
+4. Einträge an der **Titelleiste ziehen**, an der unteren rechten Ecke in der **Größe ändern**. Auf der leeren Fläche ziehen = Kamera verschieben; Mausrad = Papier-Zoom.
+5. **☏ Nachricht**: Text einer exportierten/kopierten WhatsApp-Nachricht einfügen. Sprachaufnahmen als Audio-Datei importieren, z.B. .opus oder .ogg (Wiedergabe abhängig vom Browser-Codec).
+6. Pro Video **GIF-Vorschau** an- oder ausschalten: bei Aktivierung stumm und in Endlosschleife, ansonsten normales Videoplayer-Verhalten.
+7. **Bild in Text:** Zuerst in eine Textnotiz klicken, dann die Schaltfläche wählen und ein Foto laden. Das Foto wird links im Text platziert und der Text umfließt es.
+8. Über die Datumsauswahl und Tag-Pfeile kannst du vergangene Erlebnisse dokumentieren oder zukünftige Tage vorbereiten.
+9. **✎ Notizblock übernehmen** kopiert alle noch nicht verplanten Notizblock-Stichpunkte aus V5 in einen neuen Tagebucheintrag.
 
-## Einschränkungen
+## Wo die Daten liegen
 
-**Dies ist ein Bedienprototyp, kein gemeinsamer Produktivkalender.** Die Notizen und Termine liegen nur in `localStorage` dieses Browserprofils. Andere PCs teilen diese Daten nicht. Es gibt noch keine Anmeldung, Synchronisierung, Backups, echte Website-Bearbeitung oder freie Multimedia-Papierwelt. Planen aus der Sammlung erzeugt zunächst einen 60-Minuten-Termin um 10 Uhr Berliner Zeit. Die Zeit- und Zeitzonenansichten aus V4 sind weiterhin als Demo vorhanden. Keine Animationen oder WebGL-3D.
+Automatisch neben `main.py` erzeugt:
 
-Wenn du das lokale Browserprofil löschst, gehen die Demo-Änderungen verloren. Vor produktiver Benutzung entwickeln wir FastAPI/SQLite mit Datensicherung.
+- `daten/tagebuch.sqlite3`: Tagebuchobjekte, Positionen, Datumszuordnung und Dateimetadaten
+- `daten/medien/`: importierte Dateien
+
+**Beide sichern!** V5-Kalenderkarten und Schreibtisch-Notizen sind vorerst weiterhin browsergebunden (`localStorage`), während V6-Tagebucheinträge in SQLite gespeichert werden. Auch beim Browserwechsel sind sie damit vorhanden, solange derselbe lokale Python-Server benutzt wird.
+
+## Grenzen von V6
+
+- Noch **kein** echter Server für mehrere Nutzer; keine Anmeldung und keine Rechteverwaltung. Server nur auf `127.0.0.1`, nicht ins Internet stellen.
+- Die Papierfläche ist endlos navigierbar, aber **je Datum eine eigene Fläche**; nahtlose stundenübergreifende Zeitkoordinaten stehen noch aus.
+- Word/Excel/PDFs werden gespeichert und als Dateien geöffnet/heruntergeladen, **nicht im Papier bearbeitet**.
+- WhatsApp-Nachrichten werden manuell per Kopieren/Einfügen oder als exportierte Dateien übernommen. Kein Zugriff auf WhatsApp-Konten oder automatische Synchronisierung.
+- Browser/pywebview müssen den jeweiligen Audio-/Video-Codec unterstützen.
+- Vorschau-Schleife kann vom Browser-Autoplay-Schutz blockiert werden.
+- Autosave, Datei-Upload und Löschen sind im Prototyp implementiert; produktiv fehlen Versionierung, Undo und Backup-Automatik.
