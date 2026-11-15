@@ -3,10 +3,11 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Midnight Organizer · Zeitwelt V13 · Karten und Listen</title>
+        <title>Midnight Organizer · V20 · Fensterverwaltung</title>
         <link rel="stylesheet" href="app.css">
         <link rel="stylesheet" href="paper.css">
         <link rel="stylesheet" href="timeline.css">
+        <link rel="stylesheet" href="window-manager.css">
     </head>
     <body>
         <svg id="space" xmlns="http://www.w3.org/2000/svg" aria-label="Zoombarer Kalender">
@@ -68,16 +69,27 @@
                 <button id="next">▶</button>
                 <button id="today">Heute</button>
             </div>
-            <div class="glass" id="people">
-            </div>
         </div>
-        <div id="tray">
+        <section id="peopleWindow" class="floating-window" data-window-id="people" aria-label="Personenkalender">
+            <header class="floating-titlebar">
+                <span class="floating-title">◉ Personenkalender</span>
+                <span class="floating-controls"></span>
+            </header>
+            <div class="floating-content" id="people"></div>
+        </section>
+        <section id="tray" class="floating-window" data-window-id="tasks" aria-label="Listen und Aufgaben">
+            <header class="floating-titlebar">
+                <span class="floating-title">☷ Listen und Aufgaben</span>
+                <span class="floating-controls"></span>
+            </header>
+            <div class="floating-content">
             <button id="openNotes">✎ Listen (<span id="noteCount">0</span>)</button>
             <button id="toggleTaskTray" type="button">▾ Aufgaben ausklappen</button>
             <div id="taskTrayList" hidden></div>
             <small>Aufgabe greifen und in den Kalender ziehen</small>
-        </div>
-        <section id="notepad" aria-label="Aufgaben- und Ideenliste">
+            </div>
+        </section>
+        <section id="notepad" class="floating-window" data-window-id="notepad" aria-label="Aufgaben- und Ideenliste">
             <header class="notepad-header">
                 <h2>✎ Mein Notizblock</h2>
                 <button id="closeNotes" type="button">✕</button>
@@ -164,7 +176,12 @@
             <div id="timelineScroller" tabindex="0"></div>
             <svg id="timelineLinkOverlay" aria-hidden="true"></svg>
         </section>
-        <aside id="paperAppointmentInbox" class="paper-appointment-inbox">
+        <aside id="paperAppointmentInbox" class="paper-appointment-inbox floating-window" data-window-id="inbox">
+            <header class="floating-titlebar">
+                <span class="floating-title">◧ Papiernotizen</span>
+                <span class="floating-controls"></span>
+            </header>
+            <div class="floating-content">
             <button id="togglePaperInbox" type="button" aria-expanded="false">
                 ◧ Papiernotizen einplanen
             </button>
@@ -174,7 +191,12 @@
                 <div id="paperInboxItems"></div>
                 <p id="paperInboxStatus" role="status"></p>
             </section>
+            </div>
         </aside>
+        <nav id="viewManager" aria-label="Ansichtsliste">
+            <button id="toggleViewList" type="button" aria-expanded="false" aria-controls="viewList">▦ Ansichten</button>
+            <div id="viewList" hidden></div>
+        </nav>
         <div id="bottom">
             <div class="bubble"><button id="undoCalendar" title="Rückgängig (Strg+Z)">↶</button> <button id="redoCalendar" title="Wiederholen (Strg+Y)">↷</button></div>
             <div class="bubble" id="calendarSaveStatus">Kalender wird geladen …</div>
@@ -238,5 +260,6 @@
         <script src="timeline.js"></script>
         <script src="timeline-board.js"></script>
         <script src="16-paper-calendar-integration.js"></script>
+        <script src="window-manager.js"></script>
     </body>
 </html>

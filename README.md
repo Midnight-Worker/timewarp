@@ -117,3 +117,18 @@ dargestellt. Im Kalender gibt es rechts den ausklappbaren Vorrat
 **Papiernotizen einplanen**. Ziehe eine Notiz auf einen Tag oder eine Uhrzeit.
 
 Details: `WAS-IST-NEU-V18.md`.
+
+
+## V20 – Schwebende Werkzeugfenster
+
+Die Personenwahl, die Aufgabenleiste, der Papiernotizen-Vorrat und der Notizblock
+sind jetzt kleine Fenster. An der Titelleiste ziehen, per Klick in den Vordergrund
+holen, mit `×` schließen, mit `−` minimieren. Über **▦ Ansichten** rechts oben
+lassen sich geschlossene Fenster wieder öffnen.
+
+Doppelklick auf die Titelleiste dockt rechts an, Shift+Doppelklick links;
+ein erneuter Doppelklick an derselben Seite stellt die freie Position wieder her.
+Position, Fensterreihenfolge, Sichtbarkeit und Minimierung speichert `localStorage`.
+
+Der Code ist getrennt in `web/window-manager.js` und `web/window-manager.css`.
+Die SVG-Kamera und die Kalenderdaten werden dadurch nicht verändert.

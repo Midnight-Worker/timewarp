@@ -1,0 +1,192 @@
+/*
+ * window-manager.css
+ *
+ * Nur die Werkzeuge schweben. Kalender und SVG-Kamera bleiben unabhängig.
+ * Jede Position bezieht sich auf das Browserfenster, nicht auf die Kalenderwelt.
+ */
+
+.floating-window {
+    position: fixed;
+    z-index: 100;
+    margin: 0;
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    transform: none;
+    box-shadow: 0 15px 44px #0009;
+}
+
+.floating-window[hidden] {
+    display: none !important;
+}
+
+.floating-window.is-focused {
+    outline: 1px solid #70e8ca;
+    box-shadow: 0 19px 48px #000c, 0 0 0 2px #65d7c433;
+}
+
+.floating-titlebar,
+#notepad .notepad-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    padding: 8px 11px;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    border-bottom: 1px solid #547588;
+    background: #203e52;
+    color: #e9f8ff;
+    border-radius: 9px 9px 0 0;
+}
+
+.floating-titlebar:active,
+#notepad .notepad-header:active {
+    cursor: grabbing;
+}
+
+.floating-title {
+    font-size: 13px;
+    font-weight: 650;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.floating-controls {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.floating-controls button {
+    padding: 2px 7px;
+    min-width: 28px;
+    background: #294a5d;
+}
+
+.floating-content {
+    padding: 10px;
+    overflow: auto;
+    max-height: calc(100vh - 100px);
+}
+
+.floating-window.is-minimized > :not(.floating-titlebar):not(.notepad-header) {
+    display: none !important;
+}
+
+/* Die bisherige rechte Buttonleiste wird zum Fensterinhalt. */
+#peopleWindow {
+    width: 405px;
+    background: #0b2031f2;
+    border: 1px solid #54778d;
+    border-radius: 12px;
+}
+
+#people {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: none;
+    margin: 0;
+    gap: 5px;
+}
+
+#tray {
+    width: 295px;
+    max-width: unset;
+    padding: 0;
+    top: auto;
+    right: auto;
+}
+
+#paperAppointmentInbox {
+    width: 340px;
+    top: auto;
+    right: auto;
+}
+
+.paper-appointment-inbox > .floating-content > button {
+    width: 100%;
+    text-align: left;
+}
+
+#notepad {
+    top: auto;
+    left: auto;
+    width: min(370px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    padding: 0 13px 15px;
+    transform: none;
+}
+
+#notepad .notepad-header {
+    margin: 0 -13px 10px;
+    background: #e1d0a6;
+    color: #23313c;
+    border-color: #baab81;
+}
+
+#notepad .notepad-header h2 {
+    margin: 0;
+    font-size: 17px;
+}
+
+#viewManager {
+    position: fixed;
+    z-index: 10000;
+    top: 12px;
+    right: 12px;
+    width: max-content;
+    max-width: calc(100vw - 24px);
+}
+
+#viewList {
+    margin-top: 8px;
+    padding: 9px;
+    background: #0b2538f5;
+    border: 1px solid #5e8294;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px #000a;
+    min-width: 225px;
+}
+
+#viewList[hidden] {
+    display: none;
+}
+
+.view-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+}
+
+.view-list-row button {
+    padding: 4px 9px;
+    white-space: nowrap;
+}
+
+/* In den Papieransichten gehören die schwebenden Kalenderwerkzeuge nicht zur Szene. */
+body.paper-mode .floating-window,
+body.paper-mode #viewManager,
+body:has(#timelineOverlay.active) .floating-window,
+body:has(#timelineOverlay.active) #viewManager {
+    display: none !important;
+}
+
+@media (max-width: 680px) {
+    .floating-window {
+        max-width: calc(100vw - 16px);
+    }
+    #viewManager {
+        top: 6px;
+        right: 6px;
+    }
+}
+
+/* Dialoge müssen über allen frei sortierbaren Werkzeugfenstern bleiben. */
+.appointment-dialog,
+#calendarConflict,
+.website-editor {
+    z-index: 20010;
+}

@@ -27,7 +27,8 @@ PUBLIC_FILES = {
     "10-calendar-sync.js", "11-day-interaction.js",
     "12-appointment-editor.js", "13-notepad.js",
     "14-appointment-selection.js", "15-time-drawing.js",
-    "16-paper-calendar-integration.js"
+    "16-paper-calendar-integration.js",
+    "window-manager.js", "window-manager.css"
 }
 
 
