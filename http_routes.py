@@ -25,6 +25,13 @@ from paper_database import (
 )
 
 
+from timeline_routes import (
+    handle_timeline_get,
+    handle_timeline_post,
+    handle_timeline_delete,
+)
+
+
 class OrganizerRequestHandler(BaseHTTPRequestHandler):
     """HTTP-Routen für Oberfläche, Kalenderpapier und Medien."""
 
@@ -79,6 +86,10 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
         file_name = requested_path.lstrip("/")
         if file_name in PUBLIC_FILES and requested_path == "/" + file_name:
             self.send_web_asset(file_name)
+            return
+
+        if requested_path in ("/api/timeline", "/api/timeline/counts"):
+            handle_timeline_get(self, request_url)
             return
 
         if requested_path == "/api/calendar":
@@ -169,7 +180,9 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         requested_path = urlparse(self.path).path
-        if requested_path == "/api/upload":
+        if requested_path == "/api/timeline":
+            handle_timeline_post(self)
+        elif requested_path == "/api/upload":
             self.receive_media_upload()
         elif requested_path == "/api/items":
             self.save_or_update_paper_item()
@@ -291,6 +304,10 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         requested_path = urlparse(self.path).path
+        if requested_path.startswith("/api/timeline/"):
+            handle_timeline_delete(self, requested_path)
+            return
+
         if not requested_path.startswith("/api/items/"):
             self.send_http_response(404, {"error": "Unbekannter Pfad"})
             return

@@ -6,6 +6,7 @@
         <title>Midnight Organizer · Zeitwelt V13 · Karten und Listen</title>
         <link rel="stylesheet" href="app.css">
         <link rel="stylesheet" href="paper.css">
+        <link rel="stylesheet" href="timeline.css">
     </head>
     <body>
         <svg id="space" xmlns="http://www.w3.org/2000/svg" aria-label="Zoombarer Kalender">
@@ -122,6 +123,7 @@
                 <label>Datum <input id="paperDay" type="date">
                 </label>
                 <button id="paperNext">Tag ▶</button>
+                <button id="paperOpenTimeline" type="button">⏱ Zeitpapier / Stundenblätter</button>
                 <button id="paperAddText">✎ Text</button>
                 <button id="paperAddMsg">☏ Nachricht</button>
                 <button id="paperImportNotes">✎ Notizblock übernehmen</button>
@@ -136,6 +138,18 @@
             </nav>
             <div id="paperHint">Leere Fläche ziehen: bewegen · Mausrad: zoomen · Objekttitel ziehen: bewegen · Ecke ziehen: Größe ändern</div>
             <div id="paperDrop">Hier ablegen: Bilder · Audio · Videos · Dokumente</div>
+        </section>
+        <!-- Neues fortlaufendes Tagebuch: 1 Stunde = mindestens eine Seite. -->
+        <section id="timelineOverlay" aria-label="Endloses Zeitpapier">
+            <nav id="timelineToolbar">
+                <button id="timelineBack" type="button">← Kalender</button>
+                <button id="timelineFreePaper" type="button">Freie Papierablage</button>
+                <label>Datum <input id="timelineDate" type="date"></label>
+                <button id="timelineAddFile" type="button">＋ Datei / Foto / Audio</button>
+                <input id="timelineFiles" type="file" multiple hidden>
+                <span id="timelineStatus" aria-live="polite">Zeitpapier</span>
+            </nav>
+            <div id="timelineScroller" tabindex="0"></div>
         </section>
         <div id="bottom">
             <div class="bubble"><button id="undoCalendar" title="Rückgängig (Strg+Z)">↶</button> <button id="redoCalendar" title="Wiederholen (Strg+Y)">↷</button></div>
@@ -191,9 +205,11 @@
         <script src="13-notepad.js"></script>
         <script src="website-editor.js"></script>
         <script src="08-start.js"></script>
+        <script src="timeline-shadows.js"></script>
         <!-- Zuerst die gut lesbare API-Hilfe, dann der Tagebucheditor. -->
         <script src="paper-network.js"></script>
         <script src="paper-relations.js"></script>
         <script src="paper.js"></script>
+        <script src="timeline.js"></script>
     </body>
 </html>

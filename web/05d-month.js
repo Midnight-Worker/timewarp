@@ -80,6 +80,12 @@ function drawMonthDayColumn(monthSheet, date) {
         27, '#e8f8ff', 650
     );
 
+    if (window.TimelineShadows) {
+        window.TimelineShadows.drawShadow(
+            dayGroup, dateKey, dayColumnLeft + 4, 254, 189, 590
+        );
+    }
+
     const visibleAppointments = appointmentsForDate(dateKey).slice(0, 9);
     visibleAppointments.forEach((appointment, index) => {
         const cardY = 270 + index * 76;

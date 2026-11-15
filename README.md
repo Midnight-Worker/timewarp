@@ -66,3 +66,34 @@ Siehe `WAS-IST-NEU-V14.md`. Einmal klicken: wählen; E: bearbeiten; Entf/X: lös
 ## V15: Zeichnen in jeder Kalenderansicht
 
 Siehe `WAS-IST-NEU-V15.md`. Doppelklick auf leere Kalenderzelle: neuer Termin. Ziehen auf freier Kalenderfläche: Zeitintervall.
+
+
+## V16: Fortlaufendes Zeitpapier
+
+Beim Hineinzoomen über die Tagesansicht hinaus öffnet sich jetzt das **Zeitpapier**.
+Jede Stunde bekommt mindestens 80 % der Fensterhöhe und eine breite Papierseite.
+Text darf beliebig wachsen: Der Browser rückt spätere Stunden automatisch nach
+unten. Scrollen lädt die vorherigen bzw. folgenden Tage nach.
+
+- **+ Notiz für diese Stunde** erzeugt einen Textblock mit Zeitstempel.
+- **Uhrzeit am Block** lässt sich minutengenau ändern (innerhalb geladener Tage).
+- **Drag-and-drop auf ein Stundenblatt** importiert Bild, Audio, Video und Dateien.
+- **＋ Datei / Foto / Audio** öffnet den Dateidialog für die sichtbare Stunde.
+- **Freie Papierablage** wechselt zum älteren frei positionierbaren Tagebuch.
+- **← Kalender** kehrt zur Tagesansicht zurück.
+
+Die neuen Einträge werden in SQLite in `timeline_entries` gespeichert; die ältere
+Tagebuchsammlung in `paper_items` bleibt **unangetastet**. Bestehende freie
+Tagebucheinträge werden noch nicht automatisch auf Stunden verteilt.
+
+In Woche und Tag erscheinen blaugraue Schatten als Hinweis auf neue
+Zeitpapier-Einträge. Zurzeit ist das **keine Synchronisierung** zwischen
+Terminen und Tagebuch – nur eine visuelle Verbindung.
+
+Zeitzonenhinweis: Das Zeitpapier verwendet in V16 eine lokale Datum/Uhrzeit-
+Schreibweise ohne UTC-Offset. In den Übergangsstunden bei Sommerzeitwechsel
+ist der Zeitpunkt damit nicht eindeutig. Für den späteren Team-Betrieb
+benötigen wir UTC-Zeitstempel plus zugehörige IANA-Zeitzone.
+
+**Noch kein freies Skalieren im Zeitpapier.** Die bisherige freie
+Papierablage unterstützt weiterhin Karten mit Größenänderung.

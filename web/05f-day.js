@@ -47,6 +47,13 @@ function renderDayView() {
         drawTeamMemberDayLane(daySheet, visibleMembers[index], index);
     }
 
+    if (window.TimelineShadows) {
+        window.TimelineShadows.drawShadow(
+            daySheet, formatLocalDate(selectedDate), 45, 170,
+            daySheetWidth - 90, 65
+        );
+    }
+
     drawSvgText(
         daySheet, 75, daySheetHeight - 50,
         'DUNKEL = NACHT  ·  GRÜNSCHATTEN = ARBEITSZEIT 09–17 UHR (LOKAL)',

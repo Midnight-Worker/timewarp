@@ -131,6 +131,13 @@ function drawYearDayCell(yearSheet, date, monthY) {
         '#37576a'
     );
 
+    if (window.TimelineShadows) {
+        window.TimelineShadows.drawShadow(
+            dayGroup, dateKey,
+            dayColumnLeft + 2, monthY + 45, DAY_COLUMN_WIDTH - 10, 104
+        );
+    }
+
     drawSvgText(
         dayGroup,
         dayColumnLeft + 11, monthY + 37,

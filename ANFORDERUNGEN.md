@@ -129,3 +129,16 @@ Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trell
 - [x] Ausklappbare Liste für Drag-and-drop in Kalender
 - [ ] Notizliste ebenfalls zentral über API synchronisieren
 - [ ] Beim Ziehen automatisch in angrenzende Tage scrollen
+
+
+## V16 – Fortlaufendes Zeitpapier
+
+- [x] Stunde als mindestens bildschirmhohe Papierseite mit großer linker Zeitleiste
+- [x] Automatischer Textüberlauf, weitere Stunden verschieben sich nach unten
+- [x] Scroll-Nachladen angrenzender Tage
+- [x] Medien und Texte mit Minuten-Zeitstempel in eigener SQLite-Tabelle
+- [x] Dezente Tagebuch-Schatten in Wochen- und Tagesansicht
+- [ ] Ältere frei positionierte Papierobjekte in gemeinsame Zeitkoordinaten überführen
+- [ ] UTC + Zeitzonen für Sommerzeit-Sonderfälle
+- [ ] Texte, Bilder und Medien auf dem neuen Zeitpapier frei positionieren
+- [ ] TUI und Ionic/Capacitor als weitere API-Clients

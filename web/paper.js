@@ -831,6 +831,14 @@
             if (shouldOpen && dateString !== selectedDay) {
                 openPaperDate(dateString);
             }
+
+            // Die letzte Zoomstufe öffnet das zeitlich fortlaufende Papier.
+            // Die frühere freie Ablage bleibt per Schaltfläche erreichbar.
+            if (shouldOpen) {
+                window.Timeline?.open(dateString);
+            } else {
+                window.Timeline?.close();
+            }
         }
     };
 })();

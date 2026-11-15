@@ -44,6 +44,12 @@ function drawWeekDayColumn(weekSheet, date, dayIndex) {
         '#41687b', { 'stroke-width': 2 }
     );
 
+    if (window.TimelineShadows) {
+        window.TimelineShadows.drawShadow(
+            dayGroup, dateKey, dayColumnLeft + 5, 260, 286, 1100
+        );
+    }
+
     const dateLabel =
         `${weekdayAbbreviations[date.getDay()]} ` +
         `${date.getDate()}.${date.getMonth() + 1}.`;

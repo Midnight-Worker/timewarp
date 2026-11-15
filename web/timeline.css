@@ -1,0 +1,90 @@
+/* Zeitpapier: Jede Stunde ist mindestens eine große Papierseite.
+   Wächst der Inhalt, wächst die Stunde im normalen Dokumentenfluss. */
+#timelineOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 22;
+    display: none;
+    background: #d9e0e2;
+    color: #223847;
+    font: 16px/1.5 system-ui, sans-serif;
+}
+#timelineOverlay.active { display: flex; flex-direction: column; }
+#timelineToolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 20px;
+    background: #1a303e;
+    color: #f0f6f9;
+    box-shadow: 0 3px 14px #10202b45;
+    z-index: 1;
+}
+#timelineToolbar button { padding: 7px 13px; cursor: pointer; }
+#timelineToolbar input { font: inherit; padding: 4px 7px; }
+#timelineStatus { color: #afdfdc; font-size: 13px; margin-left: auto; }
+#timelineScroller { flex: 1; overflow-y: auto; scroll-behavior: auto; }
+.timeline-day { border-bottom: 8px solid #9baebb; }
+.timeline-date-heading {
+    background: #344f61;
+    color: white;
+    padding: 14px 24px;
+    font-size: 23px;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.timeline-hour {
+    display: grid;
+    grid-template-columns: minmax(105px, 16vw) minmax(0, 1fr);
+    min-height: 80vh;
+    border-bottom: 3px solid #a8bac6;
+}
+.timeline-time-label {
+    background: #cedae2;
+    border-right: 2px solid #98adbb;
+    padding: 28px 18px;
+    color: #24465a;
+    font-size: clamp(22px, 3vw, 46px);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.timeline-time-label small { display: block; font-size: 13px; font-weight: 400; }
+.timeline-page {
+    padding: 26px clamp(18px, 5vw, 85px) 80px;
+    background: #fafaf5;
+    background-image: repeating-linear-gradient(
+        180deg, transparent 0 33px, #a8c0d02e 34px 35px
+    );
+    min-width: 0;
+}
+.timeline-hour:nth-child(even) .timeline-page { background-color: #f3f6f4; }
+.timeline-page.drag-over { outline: 4px dashed #0c927e; outline-offset: -8px; }
+.timeline-page-heading { color: #728d9d; font-size: 13px; letter-spacing: .06em; }
+.timeline-add-entry { margin: 8px 0 18px; border: 1px dashed #90a8b3; color: #30596b;
+    background: #ffffffa0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+.timeline-entries { display: flex; flex-direction: column; gap: 22px; }
+.timeline-entry {
+    background: #ffffffeb;
+    border: 1px solid #bfccd1;
+    border-left: 5px solid #6c98b2;
+    border-radius: 9px;
+    box-shadow: 0 5px 18px #647c911c;
+    padding: 12px 16px;
+    max-width: 1050px;
+    min-width: 0;
+}
+.timeline-entry-header { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.timeline-entry-header input { font: inherit; padding: 3px; }
+.timeline-entry-header span { color: #4f6676; font-size: 13px; }
+.timeline-delete { margin-left: auto; cursor: pointer; }
+.timeline-entry textarea { display:block; width:100%; resize:vertical; min-height: 150px;
+    font: 17px/1.65 system-ui; color: #203b4b; background: #fffef9;
+    border: 1px solid #d4deda; border-radius: 5px; padding: 13px; }
+.timeline-media { max-width: 100%; max-height: 620px; object-fit: contain; display: block; }
+.timeline-entry audio, .timeline-entry video { max-width: 100%; }
+.timeline-entry a { overflow-wrap:anywhere; color:#175b79; }
+.timeline-entry label { font-size: 13px; }
+.timeline-tip { color:#617888; font-size: 12px; }

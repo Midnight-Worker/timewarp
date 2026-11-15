@@ -14,6 +14,7 @@ from configuration import DATA_DIRECTORY, SERVER_HOST, SERVER_PORT
 from http_routes import OrganizerRequestHandler
 from paper_database import prepare_storage
 from calendar_database import create_calendar_tables
+from timeline_database import create_timeline_table
 
 
 def open_application_window(application_url):
@@ -48,6 +49,7 @@ def start_application():
     """Richtet die Speicherung ein und startet die Anwendung."""
     prepare_storage()
     create_calendar_tables()
+    create_timeline_table()
 
     server_address = (SERVER_HOST, SERVER_PORT)
     http_server = ThreadingHTTPServer(
