@@ -120,31 +120,45 @@ function renderUnplannedNotes() {
     }
 }
 
-function scheduleUnplannedNote(noteId, plannedDate, ownerId = 'me') {
+/**
+ * Plant eine Notiz mit frei wählbarer Startuhrzeit.
+ * Minuten werden absichtlich nicht auf Viertelstunden gerundet.
+ */
+function scheduleUnplannedNote(
+    noteId,
+    plannedDate,
+    ownerId = 'me',
+    startHour = 10,
+    startMinute = 0
+) {
     const note = unplannedNotes.find(entry => entry.id === noteId);
+
     if (!note) {
         return;
     }
 
-    const date = plannedDate || selectedDate;
-    const newAppointment = {
+    const calendarDate = plannedDate || selectedDate;
+    const owner = teamMembers.find(member => member.id === ownerId);
+    const ownerTimeZone = owner ? owner.zone : homeTimeZone;
+
+    const appointmentStart = convertLocalTimeToUtc(
+        calendarDate.getFullYear(),
+        calendarDate.getMonth() + 1,
+        calendarDate.getDate(),
+        startHour,
+        startMinute,
+        ownerTimeZone
+    );
+
+    appointments.push({
         id: Date.now() + Math.random(),
-        at: convertLocalTimeToUtc(
-            date.getFullYear(),
-            date.getMonth() + 1,
-            date.getDate(),
-            10,
-            0,
-            homeTimeZone
-        ),
+        at: appointmentStart,
         owner: ownerId,
         title: note.text,
         duration: 60
-    };
+    });
 
-    appointments.push(newAppointment);
     unplannedNotes = unplannedNotes.filter(entry => entry.id !== noteId);
-
     saveAppointments();
     saveUnplannedNotes();
     renderCurrentScene();

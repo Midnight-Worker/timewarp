@@ -97,3 +97,13 @@ Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trell
 - [ ] Medien-Thumbnails, Suche, Rückgängig, Backups und Mehrgeräte-Datenaustausch
 
 **Sicherheitsstand:** V6 ist ein lokaler Einzelnutzer-Prototyp; der Python-Server bindet ausschließlich an 127.0.0.1. Kein öffentlicher Betrieb ohne Authentifizierung, Autorisierung und zusätzliche Absicherung.
+
+
+## V11-Zwischenstand
+
+- [x] Schreibtisch mit 2,5D-Licht, SVG-Schatten, einfachen Animationen (echtes 3D noch offen)
+- [x] Notizen durch Ziehen in der Tagesansicht minutengenau einplanen (Prototyp)
+- [x] Zeitung öffnet einen lokal gespeicherten Website-Entwurf mit Export (Veröffentlichung offen)
+- [x] Papierkarten verbinden und gruppiert verschieben (Beziehungen derzeit nur lokal gespeichert)
+- [ ] Echte 3D-Engine und nahtlose Kamerafahrten
+- [ ] Synchronisierung von Website-Entwürfen und Papierbeziehungen über den Server

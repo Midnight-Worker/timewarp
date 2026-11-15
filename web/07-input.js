@@ -257,7 +257,7 @@ function handleDesktopClick(objectName) {
     } else if (objectName === 'planet') {
         changeViewLevel(0);
     } else if (objectName === 'news') {
-        alert('Zeitung: Hier kommt später der Website-Editor hin.');
+        WebsiteEditor.open();
     }
 }
 
@@ -327,7 +327,14 @@ function createAppointmentAtPointer(pointerEvent, worldPoint) {
 }
 
 function handleGlobalKeyboard(keyboardEvent) {
-    if (document.activeElement === input) {
+    const focusedElement = document.activeElement;
+    const typingInForm = focusedElement && (
+        focusedElement.tagName === 'INPUT' ||
+        focusedElement.tagName === 'TEXTAREA' ||
+        focusedElement.isContentEditable
+    );
+
+    if (typingInForm) {
         return;
     }
 

@@ -50,6 +50,11 @@ function handleNoteDrop(pointerEvent) {
     }
 
     const noteId = Number(draggedText.slice(notePrefix.length));
+
+    if (currentViewLevel === 5 && scheduleNoteAtMinute(noteId, pointerEvent)) {
+        return;
+    }
+
     const worldPoint = screenToWorld(pointerEvent);
     const calendarDate = dateAtWorldPosition(worldPoint);
 

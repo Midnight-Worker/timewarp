@@ -243,3 +243,21 @@ body.paper-mode #top,body.paper-mode #tray,body.paper-mode #tip,body.paper-mode 
 body.paper-mode #paperToolbar {
     top: 14px;
 }
+
+/* Verbindungen liegen hinter allen Karten und fangen keine Mausklicks ab. */
+.paper-connection-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10000px;
+    height: 10000px;
+    overflow: visible;
+    pointer-events: none;
+}
+.paper-item.relation-selected {
+    outline: 3px solid #d58a24;
+    outline-offset: 3px;
+}
+.paper-item.paper-grouped {
+    border: 2px dashed #118c85;
+}

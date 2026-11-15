@@ -271,3 +271,81 @@ button: hover,button.active {
         display: none;
     }
 }
+
+/* V11: Der Schreibtisch bekommt dezente Bewegung und Tiefenwirkung. */
+.desk-floating-planet {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: planet-hover 6s ease-in-out infinite;
+}
+
+.desk-notepad, .desk-newspaper {
+    transition: filter 200ms ease;
+}
+
+.desk-notepad:hover, .desk-newspaper:hover {
+    filter: brightness(1.12) drop-shadow(0 10px 12px #0006);
+}
+
+@keyframes planet-hover {
+    0%, 100% { opacity: 0.90; }
+    50% { opacity: 1; filter: drop-shadow(0 0 18px #69e9d655); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .desk-floating-planet { animation: none; }
+}
+
+/* Die Zeitung öffnet eine lokale Redaktion mit Live-Vorschau. */
+.website-editor[hidden] { display: none; }
+.website-editor {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: grid;
+    place-items: center;
+    background: #051322dd;
+    padding: 20px;
+}
+.website-editor-panel {
+    width: min(920px, 96vw);
+    max-height: 94vh;
+    overflow: auto;
+    padding: 25px;
+    border: 1px solid #5ea89e;
+    border-radius: 14px;
+    background: #122839;
+    color: #eaf8f5;
+    box-shadow: 0 22px 90px #0009;
+}
+.website-editor-panel header,
+.website-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+.website-editor-panel label {
+    display: block;
+    margin-top: 16px;
+    margin-bottom: 5px;
+}
+.website-editor-panel input,
+.website-editor-panel textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #769d9c;
+    border-radius: 6px;
+    background: #f4f7f2;
+    color: #193039;
+    font: 15px/1.5 system-ui;
+}
+.website-preview {
+    background: #f5f1df;
+    color: #1b3946;
+    padding: 18px;
+    margin-top: 18px;
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}

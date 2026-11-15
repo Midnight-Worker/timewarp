@@ -17,7 +17,8 @@ MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 
 # Nur diese Oberflächendateien dürfen über HTTP heruntergeladen werden.
 PUBLIC_FILES = {
-    "app.css", "paper.css", "paper.js",
+    "app.css", "paper.css", "paper.js", "paper-network.js", "paper-relations.js",
+    "website-editor.js", "09-minute-planning.js",
     "01-state.js", "02-time.js", "03-storage.js", "04-svg-utils.js",
     "05a-desktop.js", "05b-globe.js",
     "05c-year.js", "05d-month.js", "05e-week.js", "05f-day.js",

@@ -1,3 +1,5 @@
+> **V10:** Siehe `WAS-IST-NEU-V10.md` für die weitere Vereinfachung von `main.py` und die neue Datei `web/paper-network.js`.
+
 # Midnight Organizer V9 – Unterrichtsfassung
 
 Diese Version ist eine **Code-Überarbeitung** des bestehenden Midnight Organizers,
@@ -125,3 +127,13 @@ ist nicht zwingend schlecht. Einsteiger sollen aber erkennen können,
 was er bedeutet. Siehe `CODE-STIL.md`.
 
 Dies ist ein Refactoring, keine neue Funktionsversion.
+
+
+## V11 – Die Zeitwerkstatt
+
+Siehe **WAS-IST-NEU-V11.md** für Bedienung, Speicherorte und Grenzen.
+Zusätzliche Lernmodule: `09-minute-planning.js`, `website-editor.js`, `paper-relations.js`.
+
+**Start:** `python main.py` (im Projektordner). Bei Bedarf `pip install pywebview`.
+
+Beim Update den bisherigen Ordner `daten/` und das alte Projekt vorher sichern.

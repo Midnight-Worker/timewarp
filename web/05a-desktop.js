@@ -7,7 +7,7 @@
  */
 
 function renderDesktop() {
-    const desktop = createSvgElement('g');
+    const desktop = createSvgElement('g', { class: 'desk-scene' });
 
     // Holzplatte und leichte Maserung
     drawSvgRectangle(
@@ -28,6 +28,7 @@ function renderDesktop() {
         }, desktop);
     }
 
+    drawDeskAtmosphere(desktop);
     drawDesktopPlanet(desktop);
     drawDesktopNotepad(desktop);
     drawDesktopPen(desktop);
@@ -59,7 +60,8 @@ function drawDesktopPlanet(desktop) {
     const miniaturePlanet = createSvgElement('g', {
         transform: 'translate(-250 -30) scale(.38)',
         style: 'cursor:pointer',
-        'data-desk': 'planet'
+        'data-desk': 'planet',
+        class: 'desk-floating-planet'
     }, desktop);
 
     createSvgElement('circle', {
@@ -107,7 +109,8 @@ function drawDesktopNotepad(desktop) {
     const notepad = createSvgElement('g', {
         'data-desk': 'notes',
         style: 'cursor:pointer',
-        transform: 'rotate(-4 660 -220)'
+        transform: 'rotate(-4 660 -220)',
+        class: 'desk-notepad'
     }, desktop);
 
     drawSvgRectangle(
@@ -170,7 +173,8 @@ function drawDesktopNewspaper(desktop) {
     const newspaper = createSvgElement('g', {
         'data-desk': 'news',
         style: 'cursor:pointer',
-        transform: 'rotate(7 560 540)'
+        transform: 'rotate(7 560 540)',
+        class: 'desk-newspaper'
     }, desktop);
 
     drawSvgRectangle(
@@ -210,4 +214,38 @@ function drawDesktopNewspaper(desktop) {
             800 - line * 60, 6, '#a9a596'
         );
     }
+}
+
+/**
+ * Ein paar zusätzliche Ebenen geben dem Schreibtisch räumliche Tiefe.
+ * Schatten, Licht und Reflexe sind reine SVG-Formen – keine 3D-Engine.
+ */
+function drawDeskAtmosphere(desktop) {
+    createSvgElement('ellipse', {
+        cx: -440,
+        cy: -50,
+        rx: 660,
+        ry: 510,
+        fill: '#75d5c3',
+        'fill-opacity': 0.055,
+        'pointer-events': 'none'
+    }, desktop);
+
+    createSvgElement('ellipse', {
+        cx: 720,
+        cy: -200,
+        rx: 480,
+        ry: 620,
+        fill: '#ffd49a',
+        'fill-opacity': 0.05,
+        'pointer-events': 'none'
+    }, desktop);
+
+    // Parallele Kanten eines Schreibblatts: einfache 2,5D-Perspektive.
+    createSvgElement('path', {
+        d: 'M-990 -645 L385 -645 L415 410 L-1015 400 Z',
+        fill: '#060e1b',
+        'fill-opacity': 0.27,
+        'pointer-events': 'none'
+    }, desktop);
 }

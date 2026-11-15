@@ -23,8 +23,8 @@
     let selectedDay = '';
     let paperItems = [];
     let paperVisible = false;
-    let currentDrag = null;
-    let dragDepth = 0;
+    let activeDragOperation = null;
+    let nestedDragCounter = 0;
     let lastFocusedTextId = null;
 
     // Anders als die SVG-Kamera verwendet die Papierkamera CSS-Pixel.
@@ -37,14 +37,14 @@
     // Einträge werden beim Tippen kurz verzögert gespeichert.
     const pendingSaveTimers = new Map();
 
-    function createUniqueId() {
+    function createEntryIdentifier() {
         if (crypto.randomUUID) {
             return crypto.randomUUID();
         }
         return `${Date.now()}-${Math.random()}`;
     }
 
-    function mediaUrl(mediaId) {
+    function getMediaUrl(mediaId) {
         return '/media/' + encodeURIComponent(mediaId);
     }
 
@@ -146,16 +146,7 @@
 
         const saveTimer = setTimeout(async () => {
             try {
-                const response = await fetch('/api/items', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(item)
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
+                await PaperNetwork.saveEntry(item);
                 showStatus('✓ gespeichert');
             } catch (error) {
                 showStatus('Speichern fehlgeschlagen: ' + error.message);
@@ -167,21 +158,17 @@
 
     async function loadPaperItems() {
         paperCanvas.replaceChildren();
+        PaperRelations.openDay(selectedDay, paperCanvas);
         paperItems = [];
 
         try {
-            const query = encodeURIComponent(selectedDay);
-            const response = await fetch('/api/items?day=' + query);
-
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-
-            paperItems = await response.json();
+            paperItems = await PaperNetwork.loadEntries(selectedDay);
             for (const item of paperItems) {
                 renderPaperItem(item);
             }
 
+            PaperRelations.refreshGroupOutlines();
+            PaperRelations.drawConnections();
             showStatus('Tagebuch geladen');
         } catch (error) {
             showStatus('Server nicht erreichbar · bitte python main.py starten');
@@ -204,7 +191,7 @@
         }
 
         const item = {
-            id: createUniqueId(),
+            id: createEntryIdentifier(),
             day: selectedDay,
             kind: kind,
             x: 80 + paperItems.length * 22,
@@ -290,10 +277,12 @@
 
         const body = document.createElement('div');
         body.className = 'paper-body';
-        fillItemBody(body, item);
+        renderItemContent(body, item);
 
         itemElement.appendChild(body);
         paperCanvas.appendChild(itemElement);
+        PaperRelations.refreshGroupOutlines();
+        PaperRelations.drawConnections();
 
         attachItemDragging(header, item, itemElement, deleteButton);
         observeItemSize(item, itemElement);
@@ -308,16 +297,20 @@
             return;
         }
 
-        await fetch('/api/items/' + encodeURIComponent(item.id), {
-            method: 'DELETE'
-        });
+        try {
+            await PaperNetwork.deleteEntry(item.id);
+        } catch (error) {
+            showStatus('Löschen fehlgeschlagen: ' + error.message);
+            return;
+        }
 
         paperItems = paperItems.filter(entry => entry.id !== item.id);
         itemElement.remove();
+        PaperRelations.removeItem(item.id);
     }
 
     /** Zeigt je nach Typ einen Editor, ein Bild, Audio, Video oder einen Link. */
-    function fillItemBody(body, item) {
+    function renderItemContent(body, item) {
         if (item.kind === 'text' || item.kind === 'message') {
             body.contentEditable = 'true';
             body.spellcheck = true;
@@ -334,7 +327,7 @@
         if (item.kind === 'image') {
             const image = document.createElement('img');
             image.className = 'preview';
-            image.src = mediaUrl(item.media_id);
+            image.src = getMediaUrl(item.media_id);
             image.alt = item.content || 'Foto';
             body.style.padding = '2px';
             body.appendChild(image);
@@ -348,14 +341,14 @@
             const audioPlayer = document.createElement('audio');
             audioPlayer.controls = true;
             audioPlayer.preload = 'none';
-            audioPlayer.src = mediaUrl(item.media_id);
+            audioPlayer.src = getMediaUrl(item.media_id);
 
             body.append(title, audioPlayer);
             return;
         }
 
         if (item.kind === 'video') {
-            addVideoPlayer(body, item);
+            createVideoPlayer(body, item);
             return;
         }
 
@@ -363,7 +356,7 @@
             const link = document.createElement('a');
             link.textContent = item.content || 'Datei';
             link.href = item.kind === 'file'
-                ? mediaUrl(item.media_id)
+                ? getMediaUrl(item.media_id)
                 : item.content;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
@@ -375,7 +368,7 @@
         }
     }
 
-    function addVideoPlayer(body, item) {
+    function createVideoPlayer(body, item) {
         const previewLabel = document.createElement('label');
         previewLabel.style.fontSize = '12px';
 
@@ -392,7 +385,7 @@
         videoPlayer.controls = true;
         videoPlayer.preload = 'metadata';
         videoPlayer.playsInline = true;
-        videoPlayer.src = mediaUrl(item.media_id);
+        videoPlayer.src = getMediaUrl(item.media_id);
         videoPlayer.muted = previewCheckbox.checked;
         videoPlayer.loop = previewCheckbox.checked;
         videoPlayer.autoplay = previewCheckbox.checked;
@@ -427,13 +420,26 @@
                 return;
             }
 
-            currentDrag = {
+            // Strg+Klick markiert Karten zum Verbinden oder Gruppieren.
+            if (pointerEvent.ctrlKey || pointerEvent.metaKey) {
+                PaperRelations.toggleSelected(item.id, element);
+                pointerEvent.preventDefault();
+                return;
+            }
+
+            const groupMemberIds = PaperRelations.membersInSameGroup(item.id);
+            const groupStartPositions = paperItems
+                .filter(entry => groupMemberIds.includes(entry.id))
+                .map(entry => ({ id: entry.id, x: entry.x, y: entry.y }));
+
+            activeDragOperation = {
                 type: 'item',
                 id: item.id,
                 startPointerX: pointerEvent.clientX,
                 startPointerY: pointerEvent.clientY,
                 startItemX: item.x,
-                startItemY: item.y
+                startItemY: item.y,
+                groupStartPositions: groupStartPositions
             };
 
             header.setPointerCapture(pointerEvent.pointerId);
@@ -441,24 +447,48 @@
         });
 
         header.addEventListener('pointermove', pointerEvent => {
-            if (!currentDrag || currentDrag.type !== 'item' || currentDrag.id !== item.id) {
+            if (!activeDragOperation || activeDragOperation.type !== 'item' || activeDragOperation.id !== item.id) {
                 return;
             }
 
-            const movementX = pointerEvent.clientX - currentDrag.startPointerX;
-            const movementY = pointerEvent.clientY - currentDrag.startPointerY;
+            const movementX = pointerEvent.clientX - activeDragOperation.startPointerX;
+            const movementY = pointerEvent.clientY - activeDragOperation.startPointerY;
 
-            item.x = currentDrag.startItemX + movementX / paperCamera.scale;
-            item.y = currentDrag.startItemY + movementY / paperCamera.scale;
+            // Alle Karten einer Gruppe bewegen sich mit demselben Versatz.
+            for (const startPosition of activeDragOperation.groupStartPositions) {
+                const movingItem = paperItems.find(entry =>
+                    entry.id === startPosition.id
+                );
+                const movingElement = paperCanvas.querySelector(
+                    `.paper-item[data-id="${CSS.escape(startPosition.id)}"]`
+                );
 
-            element.style.left = `${item.x}px`;
-            element.style.top = `${item.y}px`;
+                if (!movingItem || !movingElement) {
+                    continue;
+                }
+
+                movingItem.x = startPosition.x + movementX / paperCamera.scale;
+                movingItem.y = startPosition.y + movementY / paperCamera.scale;
+                movingElement.style.left = `${movingItem.x}px`;
+                movingElement.style.top = `${movingItem.y}px`;
+            }
+            PaperRelations.drawConnections();
         });
 
         header.addEventListener('pointerup', () => {
-            if (currentDrag && currentDrag.id === item.id) {
-                currentDrag = null;
-                scheduleItemSave(item);
+            if (activeDragOperation && activeDragOperation.id === item.id) {
+                const movedGroup = activeDragOperation.groupStartPositions;
+                activeDragOperation = null;
+
+                for (const memberPosition of movedGroup) {
+                    const changedItem = paperItems.find(entry =>
+                        entry.id === memberPosition.id
+                    );
+                    if (changedItem) {
+                        scheduleItemSave(changedItem);
+                    }
+                }
+                PaperRelations.drawConnections();
             }
         });
     }
@@ -476,6 +506,7 @@
                 item.width = width;
                 item.height = height;
                 scheduleItemSave(item);
+                PaperRelations.drawConnections();
             }
         });
 
@@ -505,7 +536,7 @@
             return;
         }
 
-        currentDrag = {
+        activeDragOperation = {
             type: 'camera',
             startPointerX: pointerEvent.clientX,
             startPointerY: pointerEvent.clientY,
@@ -518,39 +549,44 @@
     }
 
     function handlePaperPointerMove(pointerEvent) {
-        if (!currentDrag || currentDrag.type !== 'camera') {
+        if (!activeDragOperation || activeDragOperation.type !== 'camera') {
             return;
         }
 
-        paperCamera.x = currentDrag.startCameraX +
-            pointerEvent.clientX - currentDrag.startPointerX;
-        paperCamera.y = currentDrag.startCameraY +
-            pointerEvent.clientY - currentDrag.startPointerY;
+        paperCamera.x = activeDragOperation.startCameraX +
+            pointerEvent.clientX - activeDragOperation.startPointerX;
+        paperCamera.y = activeDragOperation.startCameraY +
+            pointerEvent.clientY - activeDragOperation.startPointerY;
 
         applyPaperCamera();
     }
 
     function handlePaperPointerUp() {
-        if (currentDrag && currentDrag.type === 'camera') {
-            currentDrag = null;
+        if (activeDragOperation && activeDragOperation.type === 'camera') {
+            activeDragOperation = null;
         }
         paperWorld.classList.remove('panning');
     }
 
     /** Zoomen um den Mauszeiger – gleiche Idee wie beim SVG-Kalender. */
-    function handlePaperWheel(pointerEvent) {
-        pointerEvent.preventDefault();
+    function handlePaperZoom(wheelEvent) {
+        wheelEvent.preventDefault();
 
-        const oldScale = paperCamera.scale;
-        const requestedScale = oldScale * Math.exp(-pointerEvent.deltaY * 0.001);
-        const newScale = Math.min(3.5, Math.max(0.35, requestedScale));
-        const scaleRatio = newScale / oldScale;
+        const previousZoom = paperCamera.scale;
+        const wheelSensitivity = 0.001;
+        const zoomFactor = Math.exp(-wheelEvent.deltaY * wheelSensitivity);
+        const desiredZoom = previousZoom * zoomFactor;
+        const minimumZoom = 0.35;
+        const maximumZoom = 3.5;
+        const newZoom = Math.min(maximumZoom, Math.max(minimumZoom, desiredZoom));
+        const relativeZoomChange = newZoom / previousZoom;
 
-        paperCamera.x = pointerEvent.clientX -
-            (pointerEvent.clientX - paperCamera.x) * scaleRatio;
-        paperCamera.y = pointerEvent.clientY -
-            (pointerEvent.clientY - paperCamera.y) * scaleRatio;
-        paperCamera.scale = newScale;
+        // Der Mauszeiger bleibt auf demselben Punkt des Papiers.
+        paperCamera.x = wheelEvent.clientX -
+            (wheelEvent.clientX - paperCamera.x) * relativeZoomChange;
+        paperCamera.y = wheelEvent.clientY -
+            (wheelEvent.clientY - paperCamera.y) * relativeZoomChange;
+        paperCamera.scale = newZoom;
 
         applyPaperCamera();
     }
@@ -560,23 +596,7 @@
         try {
             showStatus('Lade ' + file.name + ' hoch ...');
 
-            const response = await fetch(
-                '/api/upload?name=' + encodeURIComponent(file.name),
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': file.type || 'application/octet-stream'
-                    },
-                    body: file
-                }
-            );
-
-            if (!response.ok) {
-                const failure = await response.json();
-                throw new Error(failure.error || response.status);
-            }
-
-            const uploadedMedia = await response.json();
+            const uploadedMedia = await PaperNetwork.uploadMedia(file);
             let itemKind = 'file';
 
             if (file.type.startsWith('image/')) {
@@ -614,7 +634,7 @@
 
     async function handlePaperDrop(dragEvent) {
         dragEvent.preventDefault();
-        dragDepth = 0;
+        nestedDragCounter = 0;
         dropIndicator.classList.remove('visible');
 
         if (dragEvent.dataTransfer.files.length) {
@@ -687,22 +707,9 @@
             }
 
             try {
-                const response = await fetch(
-                    '/api/upload?name=' + encodeURIComponent(imageFile.name),
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': imageFile.type },
-                        body: imageFile
-                    }
-                );
-
-                if (!response.ok) {
-                    throw new Error('Upload fehlgeschlagen');
-                }
-
-                const uploadedMedia = await response.json();
+                const uploadedMedia = await PaperNetwork.uploadMedia(imageFile);
                 const image = document.createElement('img');
-                image.src = mediaUrl(uploadedMedia.id);
+                image.src = getMediaUrl(uploadedMedia.id);
                 image.className = 'float-left';
                 image.alt = imageFile.name;
 
@@ -737,11 +744,11 @@
     paperWorld.addEventListener('pointerdown', handlePaperPointerDown);
     paperWorld.addEventListener('pointermove', handlePaperPointerMove);
     paperWorld.addEventListener('pointerup', handlePaperPointerUp);
-    paperWorld.addEventListener('wheel', handlePaperWheel, { passive: false });
+    paperWorld.addEventListener('wheel', handlePaperZoom, { passive: false });
 
     paperOverlay.addEventListener('dragenter', dragEvent => {
         dragEvent.preventDefault();
-        dragDepth++;
+        nestedDragCounter++;
         dropIndicator.classList.add('visible');
     });
 
@@ -750,9 +757,9 @@
     });
 
     paperOverlay.addEventListener('dragleave', () => {
-        dragDepth--;
-        if (dragDepth <= 0) {
-            dragDepth = 0;
+        nestedDragCounter--;
+        if (nestedDragCounter <= 0) {
+            nestedDragCounter = 0;
             dropIndicator.classList.remove('visible');
         }
     });

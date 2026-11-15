@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Midnight Organizer · Zeitwelt V8 · Unterrichtscode</title>
+        <title>Midnight Organizer · Zeitwelt V10 · Unterrichtscode</title>
         <link rel="stylesheet" href="/app.css">
         <link rel="stylesheet" href="/paper.css">
     </head>
@@ -87,6 +87,26 @@
             <ul id="noteList">
             </ul>
         </section>
+        <section id="websiteEditor" class="website-editor" hidden aria-label="Website-Redaktion">
+            <div class="website-editor-panel">
+                <header>
+                    <h2>📰 Werkstatt-Zeitung · Redaktion</h2>
+                    <button id="websiteClose" type="button">Schließen ×</button>
+                </header>
+                <p>Lokaler Website-Entwurf – noch keine automatische Veröffentlichung.</p>
+                <label for="websiteTitle">Überschrift</label>
+                <input id="websiteTitle" type="text" maxlength="180">
+                <label for="websiteIntroduction">Einleitung</label>
+                <textarea id="websiteIntroduction" rows="3"></textarea>
+                <label for="websiteContent">Artikel / Website-Inhalt</label>
+                <textarea id="websiteContent" rows="7"></textarea>
+                <div class="website-actions">
+                    <span id="websiteSaveStatus">Lokal gespeichert</span>
+                    <button id="websiteExport" type="button">HTML-Entwurf exportieren</button>
+                </div>
+                <div class="website-preview" id="websitePreview"></div>
+            </div>
+        </section>
         <div id="tip">🌍 Zeitzonen folgen den echten Sommer-/Winterzeitregeln des jeweiligen Datums. <br>In der Tagesansicht: Personen anklicken, um Kalender einzublenden.</div>
         <section id="paperOverlay" aria-label="Endlos-Tagebuch">
             <div id="paperWorld">
@@ -105,6 +125,9 @@
                 <button id="paperAddLink">↗ Link</button>
                 <button id="paperAddFiles">＋ Fotos / Dateien</button>
                 <button id="paperFloatImg">▧ Bild in Text</button>
+                <button id="paperConnect">⤳ Verbinden</button>
+                <button id="paperGroup">▣ Gruppieren</button>
+                <button id="paperUngroup">Gruppe lösen</button>
                 <input id="paperFiles" type="file" multiple hidden>
                 <span id="paperMsg">Tagebuch</span>
             </nav>
@@ -116,14 +139,10 @@
             <div class="bubble">← → Wochenauswahl · Enter: öffnen · Esc: herauszoomen · Bild ↑↓: blättern</div>
         </div>
         <input id="editor" aria-label="Kartentitel bearbeiten" maxlength="140"/>
-        <script src="/01-state.js">
-        </script>
-        <script src="/02-time.js">
-        </script>
-        <script src="/03-storage.js">
-        </script>
-        <script src="/04-svg-utils.js">
-        </script>
+        <script src="/01-state.js"></script>
+        <script src="/02-time.js"></script>
+        <script src="/03-storage.js"></script>
+        <script src="/04-svg-utils.js"></script>
         <script src="/05a-desktop.js"></script>
         <script src="/05b-globe.js"></script>
         <!-- Die großen Kalenderansichten sind bewusst getrennt. -->
@@ -131,13 +150,14 @@
         <script src="/05d-month.js"></script>
         <script src="/05e-week.js"></script>
         <script src="/05f-day.js"></script>
-        <script src="/06-camera.js">
-        </script>
-        <script src="/07-input.js">
-        </script>
-        <script src="/08-start.js">
-        </script>
-        <script src="/paper.js">
-        </script>
+        <script src="/06-camera.js"></script>
+        <script src="/07-input.js"></script>
+        <script src="/09-minute-planning.js"></script>
+        <script src="/website-editor.js"></script>
+        <script src="/08-start.js"></script>
+        <!-- Zuerst die gut lesbare API-Hilfe, dann der Tagebucheditor. -->
+        <script src="/paper-network.js"></script>
+        <script src="/paper-relations.js"></script>
+        <script src="/paper.js"></script>
     </body>
 </html>
