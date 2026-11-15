@@ -1,205 +1,829 @@
-(()=> {
-    'use strict'; const root=document.querySelector('#paperOverlay'), world=document.querySelector('#paperWorld'), canvas=document.querySelector('#paperCanvas'), msg=document.querySelector('#paperMsg'), dayInput=document.querySelector('#paperDay'), pick=document.querySelector('#paperFiles'); let day='', items=[], pan= {
-        x:210, y:180, z:1
-    } , drag=null, saveTimers=new Map(), active=false, dropDepth=0, lastTextItem=null; const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random(); const escapeHTML=s=>String(s).replace(/[&<>"']/g, c=>( {
-        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-    } [c])); function status(t) {
-        msg.textContent=t; setTimeout(()=> {
-            if(msg.textContent===t)msg.textContent=''
-        } , 3500)
+/*
+ * paper.js – Tagebuch und freie Papierfläche
+ *
+ * Dieses Modul hat einen eigenen Zustand und verändert nicht die
+ * globalen Variablen des Kalenders. Darum verwenden wir eine IIFE:
+ * eine Funktion, die sich einmal beim Laden selbst ausführt.
+ *
+ * Die Papierobjekte werden über die Python-API in SQLite gespeichert.
+ * Hochgeladene Mediendateien bleiben im Ordner daten/medien/.
+ */
+
+(() => {
+    'use strict';
+
+    const paperOverlay = document.querySelector('#paperOverlay');
+    const paperWorld = document.querySelector('#paperWorld');
+    const paperCanvas = document.querySelector('#paperCanvas');
+    const statusLabel = document.querySelector('#paperMsg');
+    const dateInput = document.querySelector('#paperDay');
+    const filePicker = document.querySelector('#paperFiles');
+    const dropIndicator = document.querySelector('#paperDrop');
+
+    let selectedDay = '';
+    let paperItems = [];
+    let paperVisible = false;
+    let currentDrag = null;
+    let dragDepth = 0;
+    let lastFocusedTextId = null;
+
+    // Anders als die SVG-Kamera verwendet die Papierkamera CSS-Pixel.
+    let paperCamera = {
+        x: 210,
+        y: 180,
+        scale: 1
+    };
+
+    // Einträge werden beim Tippen kurz verzögert gespeichert.
+    const pendingSaveTimers = new Map();
+
+    function createUniqueId() {
+        if (crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return `${Date.now()}-${Math.random()}`;
     }
-const media=id=>'/media/'+encodeURIComponent(id); function sanitize(html) {
-        const doc=new DOMParser().parseFromString('<div>'+html+'</div>', 'text/html'); const accepted=new Set(['DIV', 'P', 'BR', 'B', 'STRONG', 'EM', 'I', 'U', 'SPAN', 'IMG', 'UL', 'OL', 'LI']); // Sichere Speicherung eigener Notizbilder: src darf nur auf lokale Medien-IDs zeigen.
-        function sanitizeNode(n) {
-            for(const ch of [...n.childNodes]) {
-                if(ch.nodeType===8) {
-                    ch.remove(); continue
-                } if(ch.nodeType!==1)continue; if(!accepted.has(ch.tagName)) {
-                    ch.replaceWith(...ch.childNodes); continue
+
+    function mediaUrl(mediaId) {
+        return '/media/' + encodeURIComponent(mediaId);
+    }
+
+    function showStatus(message) {
+        statusLabel.textContent = message;
+
+        setTimeout(() => {
+            if (statusLabel.textContent === message) {
+                statusLabel.textContent = '';
+            }
+        }, 3500);
+    }
+
+    /** Text wird für HTML-Inhalte escaped, statt direkt interpretiert. */
+    function escapeHtml(plainText) {
+        const escapeCharacters = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        };
+
+        return String(plainText).replace(/[&<>"']/g, character => {
+            return escapeCharacters[character];
+        });
+    }
+
+    /**
+     * Entfernt unzulässige HTML-Elemente und Attribute aus Notizen.
+     * Erlaubt bleiben einfache Formatierungen und lokal gespeicherte Bilder.
+     */
+    function sanitizeRichText(html) {
+        const documentFragment = new DOMParser().parseFromString(
+            '<div>' + html + '</div>',
+            'text/html'
+        );
+
+        const permittedTags = new Set([
+            'DIV', 'P', 'BR', 'B', 'STRONG', 'EM', 'I', 'U',
+            'SPAN', 'IMG', 'UL', 'OL', 'LI'
+        ]);
+
+        function sanitizeChildren(parentElement) {
+            for (const child of [...parentElement.childNodes]) {
+                // HTML-Kommentare entfernen.
+                if (child.nodeType === 8) {
+                    child.remove();
+                    continue;
                 }
-const src=ch.getAttribute('src')||''; const style=ch.getAttribute('class')||''; for(const a of [...ch.attributes])ch.removeAttribute(a.name); if(ch.tagName==='IMG'&&/^\/media\/[a-f0-9]{32}$/.test(src)) {
-                    ch.setAttribute('src', src); ch.setAttribute('class', style==='float-right'?'float-right':'float-left');
-                } else if(ch.tagName==='IMG') {
-                    ch.remove(); continue
-                } sanitizeNode(ch)
+
+                if (child.nodeType !== 1) {
+                    continue;
+                }
+
+                if (!permittedTags.has(child.tagName)) {
+                    child.replaceWith(...child.childNodes);
+                    continue;
+                }
+
+                const oldImageSource = child.getAttribute('src') || '';
+                const oldImageClass = child.getAttribute('class') || '';
+
+                // Alle HTML-Attribute erst einmal entfernen.
+                for (const attribute of [...child.attributes]) {
+                    child.removeAttribute(attribute.name);
+                }
+
+                if (child.tagName === 'IMG') {
+                    // Bilder dürfen nur aus unserem lokalen Medienverzeichnis kommen.
+                    if (!/^\/media\/[a-f0-9]{32}$/.test(oldImageSource)) {
+                        child.remove();
+                        continue;
+                    }
+
+                    child.setAttribute('src', oldImageSource);
+                    child.setAttribute(
+                        'class',
+                        oldImageClass === 'float-right' ? 'float-right' : 'float-left'
+                    );
+                }
+
+                sanitizeChildren(child);
             }
-        } sanitizeNode(doc.body.firstElementChild); return doc.body.firstElementChild.innerHTML;
+        }
+
+        const textContainer = documentFragment.body.firstElementChild;
+        sanitizeChildren(textContainer);
+        return textContainer.innerHTML;
     }
-function persist(item) {
-        if(!active)return; clearTimeout(saveTimers.get(item.id)); saveTimers.set(item.id, setTimeout(async()=> {
+
+    /** Autosave: Nach der letzten Änderung 450 ms warten. */
+    function scheduleItemSave(item) {
+        if (!paperVisible) {
+            return;
+        }
+
+        clearTimeout(pendingSaveTimers.get(item.id));
+
+        const saveTimer = setTimeout(async () => {
             try {
-                let r=await fetch('/api/items', {
-                    method:'POST', headers: {
-                        'Content-Type':'application/json'
-                    } , body:JSON.stringify(item)
-                } ); if(!r.ok)throw Error(await r.text()); status('✓ gespeichert')
-            } catch(e) {
-                status('Speichern fehlgeschlagen: '+e.message)
+                const response = await fetch('/api/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                showStatus('✓ gespeichert');
+            } catch (error) {
+                showStatus('Speichern fehlgeschlagen: ' + error.message);
             }
-        } , 450))
-    } async function load() {
-        canvas.replaceChildren(); items=[]; try {
-            let response=await fetch('/api/items?day='+encodeURIComponent(day)); if(!response.ok)throw Error(response.status); items=await response.json(); items.forEach(render); status('Tagebuch geladen')
-        } catch(e) {
-            status('Server nicht erreichbar · bitte python main.py starten')
-        }
+        }, 450);
+
+        pendingSaveTimers.set(item.id, saveTimer);
     }
-function makeItem(kind, props= {
-    } ) {
-        const it= {
-            id:uid(), day, kind, x:80+items.length*22, y:80+items.length*18, width:kind==='text'?420:kind==='image'?320:350, height:kind==='text'?260:kind==='video'?265:kind==='image'?270:170, content:'', media_id:'', preview:0, ...props
-        } ; items.push(it); render(it); persist(it); return it
-    }
-function setPan() {
-        canvas.style.transform=`translate(${pan.x}px, ${pan.y}px) scale(${pan.z})`; world.style.backgroundPosition=`${pan.x}px ${pan.y}px`
-    }
-function openDate(d) {
-        if(!/^\d{4}-\d\d-\d\d$/.test(d))return; day=d; dayInput.value=d; pan= {
-            x:210, y:180, z:1
-        } ; setPan(); load()
-    }
-function editText(it, body) {
-        body.addEventListener('input', ()=> {
-            it.content=sanitize(body.innerHTML); persist(it)
-        } ); body.addEventListener('blur', ()=> {
-            it.content=sanitize(body.innerHTML); persist(it)
-        } )
-    }
-function render(it) {
-        const el=document.createElement('article'); el.className='paper-item'; el.dataset.id=it.id; el.style.cssText=`left:${it.x}px;top:${it.y}px;width:${it.width}px;height:${it.height}px`; const head=document.createElement('header'); const name=document.createElement('span'); name.textContent=( {
-            text:'✎ Tagebucheintrag', image:'▧ Foto', video:'▶ Video', audio:'♫ Audio', file:'▤ Dokument', link:'↗ Link', message:'☏ Nachricht'
-        } )[it.kind]||it.kind; const del=document.createElement('button'); del.title='Objekt löschen'; del.textContent='×'; del.onclick=async()=> {
-            if(!confirm('Objekt entfernen? Die hochgeladene Datei bleibt als Sicherung erhalten.'))return; await fetch('/api/items/'+encodeURIComponent(it.id), {
-                method:'DELETE'
-            } ); items=items.filter(x=>x.id!==it.id); el.remove()
-        } ; head.append(name, del); el.append(head); const body=document.createElement('div'); body.className='paper-body'; if(it.kind==='text'||it.kind==='message') {
-            body.contentEditable='true'; body.spellcheck=true; body.innerHTML=sanitize(it.content||''); body.dataset.placeholder='Schreibe deine Geschichte ...'; editText(it, body); body.addEventListener('focus', ()=> {
-                lastTextItem=it.id
-            } )
-        } else if(it.kind==='image') {
-            const img=document.createElement('img'); img.className='preview'; img.src=media(it.media_id); img.alt=it.content||'Foto'; body.style.padding='2px'; body.append(img)
-        } else if(it.kind==='audio') {
-            const name=document.createElement('div'); name.textContent=it.content; const audio=document.createElement('audio'); audio.controls=true; audio.preload='none'; audio.src=media(it.media_id); body.append(name, audio)
-        } else if(it.kind==='video') {
-            const label=document.createElement('label'); label.style.fontSize='12px'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!it.preview; label.append(cb, document.createTextNode(' GIF-Vorschau (stumm, Schleife)')); const v=document.createElement('video'); v.controls=true; v.preload='metadata'; v.playsInline=true; v.src=media(it.media_id); v.muted=cb.checked; v.loop=cb.checked; v.autoplay=cb.checked; cb.onchange=()=> {
-                it.preview=cb.checked?1:0; v.muted=cb.checked; v.loop=cb.checked; if(cb.checked)v.play().catch(()=>status('Autoplay vom Browser blockiert')); else v.pause(); persist(it)
-            } ; body.append(label, v); if(it.preview) v.play().catch(()=> {
-            } );
-        } else if(it.kind==='file'||it.kind==='link') {
-            const a=document.createElement('a'); a.textContent=it.content||'Datei'; a.href=it.kind==='file'?media(it.media_id):it.content; a.target='_blank'; a.rel='noopener noreferrer'; if(it.kind==='file')a.download=it.content; body.append('📎 ', a)
-        } el.append(body); canvas.append(el); head.addEventListener('pointerdown', e=> {
-            if(e.target===del||e.button!==0)return; drag= {
-                type:'item', id:it.id, px:e.clientX, py:e.clientY, ox:it.x, oy:it.y
-            } ; head.setPointerCapture(e.pointerId); e.preventDefault()
-        } ); head.addEventListener('pointermove', e=> {
-            if(!drag||drag.type!=='item'||drag.id!==it.id)return; it.x=drag.ox+(e.clientX-drag.px)/pan.z; it.y=drag.oy+(e.clientY-drag.py)/pan.z; el.style.left=it.x+'px'; el.style.top=it.y+'px'
-        } ); head.addEventListener('pointerup', ()=> {
-            if(drag?.id===it.id) {
-                drag=null; persist(it)
-            }
-        } ); const observer=new ResizeObserver(()=> {
-            if(!el.isConnected)return; const w=el.offsetWidth, h=el.offsetHeight; if(w!==it.width||h!==it.height) {
-                it.width=w; it.height=h; persist(it)
-            }
-        } ); observer.observe(el); return el;
-    }
-function coords(e) {
-        let b=world.getBoundingClientRect(); return {
-            x:(e.clientX-b.left-pan.x)/pan.z, y:(e.clientY-b.top-pan.y)/pan.z
-        }
-    }
-world.addEventListener('pointerdown', e=> {
-        if(e.button!==0||e.target.closest('.paper-item')||e.target.closest('#paperToolbar'))return; drag= {
-            type:'pan', px:e.clientX, py:e.clientY, ox:pan.x, oy:pan.y
-        } ; world.setPointerCapture(e.pointerId); world.classList.add('panning')
-    } ); world.addEventListener('pointermove', e=> {
-        if(drag?.type==='pan') {
-            pan.x=drag.ox+e.clientX-drag.px; pan.y=drag.oy+e.clientY-drag.py; setPan()
-        }
-    } ); world.addEventListener('pointerup', ()=> {
-        if(drag?.type==='pan')drag=null; world.classList.remove('panning')
-    } ); world.addEventListener('wheel', e=> {
-        e.preventDefault(); const old=pan.z, next=Math.min(3.5, Math.max(.35, old*Math.exp(-e.deltaY*.001))); const x=e.clientX, y=e.clientY; pan.x=x-(x-pan.x)*next/old; pan.y=y-(y-pan.y)*next/old; pan.z=next; setPan()
-    } , {
-        passive:false
-    } ); async function upload(file, at) {
+
+    async function loadPaperItems() {
+        paperCanvas.replaceChildren();
+        paperItems = [];
+
         try {
-            status('Lade '+file.name+' hoch ...'); const r=await fetch('/api/upload?name='+encodeURIComponent(file.name), {
-                method:'POST', headers: {
-                    'Content-Type':file.type||'application/octet-stream'
-                } , body:file
-            } ); if(!r.ok)throw Error((await r.json()).error||r.status); const obj=await r.json(); const kind=file.type.startsWith('image/')?'image':file.type.startsWith('video/')?'video':file.type.startsWith('audio/')?'audio':'file'; makeItem(kind, {
-                x:at.x, y:at.y, content:file.name, media_id:obj.id
-            } ); status('✓ '+file.name+' abgelegt')
-        } catch(e) {
-            status('Import fehlgeschlagen: '+e.message)
-        }
-    } async function filesAt(files, point) {
-        for(const f of files) {
-            await upload(f, point); point= {
-                x:point.x+32, y:point.y+32
+            const query = encodeURIComponent(selectedDay);
+            const response = await fetch('/api/items?day=' + query);
+
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
             }
+
+            paperItems = await response.json();
+            for (const item of paperItems) {
+                renderPaperItem(item);
+            }
+
+            showStatus('Tagebuch geladen');
+        } catch (error) {
+            showStatus('Server nicht erreichbar · bitte python main.py starten');
         }
     }
-root.addEventListener('dragenter', e=> {
-        e.preventDefault(); dropDepth++; document.querySelector('#paperDrop').classList.add('visible')
-    } ); root.addEventListener('dragover', e=> {
-        e.preventDefault()
-    } ); root.addEventListener('dragleave', ()=> {
-        if(--dropDepth<=0) {
-            dropDepth=0; document.querySelector('#paperDrop').classList.remove('visible')
+
+    /** Erzeugt einen neuen Text-, Bild-, Video-, Audio- oder Datei-Eintrag. */
+    function createPaperItem(kind, properties = {}) {
+        let defaultWidth = 350;
+        let defaultHeight = 170;
+
+        if (kind === 'text') {
+            defaultWidth = 420;
+            defaultHeight = 260;
+        } else if (kind === 'image') {
+            defaultWidth = 320;
+            defaultHeight = 270;
+        } else if (kind === 'video') {
+            defaultHeight = 265;
         }
-    } ); root.addEventListener('drop', async e=> {
-        e.preventDefault(); dropDepth=0; document.querySelector('#paperDrop').classList.remove('visible'); if(e.dataTransfer.files.length)await filesAt([...e.dataTransfer.files], coords(e)); else {
-            const text=e.dataTransfer.getData('text/plain'); if(text)makeItem(/^https?:\/\//.test(text)?'link':'message', {
-                ...coords(e), content:escapeHTML(text)
-            } )
-        }
-    } ); document.querySelector('#paperAddText').onclick=()=>makeItem('text', {
-        content:'<div>Mein Tagebuch – hier hineinschreiben …</div>'
-    } ); document.querySelector('#paperAddMsg').onclick=()=> {
-        const t=prompt('WhatsApp-Nachricht oder Text einfügen (Kopieren/Einfügen):'); if(t)makeItem('message', {
-            content:escapeHTML(t)
-        } )
-    } ; document.querySelector('#paperImportNotes').onclick=()=> {
-        let notes=[]; try {
-            notes=JSON.parse(localStorage.getItem('midnight.notes.v5')||'[]')
-        } catch {
-        } if(!notes.length)return status('Der Notizblock ist noch leer'); const content=notes.map(n=>'<div>☐ '+escapeHTML(n.text)+'</div>').join(''); makeItem('text', {
-            content, width:440, height:280
-        } ); status(notes.length+' Notizen als Tagebucheintrag übernommen')
-    } ; document.querySelector('#paperAddLink').onclick=()=> {
-        const t=prompt('Webadresse (https://...)'); if(t&&/^https?:\/\//i.test(t))makeItem('link', {
-            content:t
-        } )
-    } ; document.querySelector('#paperAddFiles').onclick=()=>pick.click(); pick.addEventListener('change', async()=> {
-        await filesAt([...pick.files], {
-            x:100+Math.random()*90, y:100+Math.random()*90
-        } ); pick.value=''
-    } ); // Bild in aktuell fokussierten Textblock setzen; der Text fließt um das links schwebende Foto.
-    document.querySelector('#paperFloatImg').onclick=async()=> {
-        let target=canvas.querySelector('.paper-item[data-id="'+lastTextItem+'"]'); if(!target||!['text', 'message'].includes(items.find(i=>i.id===target.dataset.id)?.kind)) {
-            status('Zuerst in eine Textnotiz klicken'); return
-        }
-const body=target.querySelector('[contenteditable]'); const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.accept='image/*'; fileInput.onchange=async()=> {
-            if(!fileInput.files[0])return; const f=fileInput.files[0]; try {
-                let r=await fetch('/api/upload?name='+encodeURIComponent(f.name), {
-                    method:'POST', headers: {
-                        'Content-Type':f.type
-                    } , body:f
-                } ); if(!r.ok)throw Error('Upload fehlgeschlagen'); const m=await r.json(); const img=document.createElement('img'); img.src=media(m.id); img.className='float-left'; img.alt=f.name; body.prepend(img); const it=items.find(i=>i.id===target.dataset.id); it.content=sanitize(body.innerHTML); persist(it)
-            } catch(e) {
-                status(e.message)
-            }
-        } ; fileInput.click()
-    } ; dayInput.onchange=()=> {
-        window.paperAPI?.chooseDate?.(dayInput.value); openDate(dayInput.value)
-    } ; document.querySelector('#paperPrev').onclick=()=>shift(-1); document.querySelector('#paperNext').onclick=()=>shift(1); function shift(dir) {
-        const d=new Date(day+'T12:00:00'); d.setDate(d.getDate()+dir); const next=[d.getFullYear(), String(d.getMonth()+1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-'); window.paperAPI?.chooseDate?.(next); openDate(next)
+
+        const item = {
+            id: createUniqueId(),
+            day: selectedDay,
+            kind: kind,
+            x: 80 + paperItems.length * 22,
+            y: 80 + paperItems.length * 18,
+            width: defaultWidth,
+            height: defaultHeight,
+            content: '',
+            media_id: '',
+            preview: 0,
+            ...properties
+        };
+
+        paperItems.push(item);
+        renderPaperItem(item);
+        scheduleItemSave(item);
+        return item;
     }
-window.Paper= {
-        activate(on, selected) {
-            active=on; root.classList.toggle('active', on); document.body.classList.toggle('paper-mode', on); if(on&&selected!==day)openDate(selected)
+
+    /** Überträgt die CSS-Kameraposition auf die gesamte Papierfläche. */
+    function applyPaperCamera() {
+        const translation = `translate(${paperCamera.x}px, ${paperCamera.y}px)`;
+        const scaling = `scale(${paperCamera.scale})`;
+
+        paperCanvas.style.transform = `${translation} ${scaling}`;
+        paperWorld.style.backgroundPosition =
+            `${paperCamera.x}px ${paperCamera.y}px`;
+    }
+
+    function openPaperDate(dateString) {
+        if (!/^\d{4}-\d\d-\d\d$/.test(dateString)) {
+            return;
         }
-    } ;
-} )();
+
+        selectedDay = dateString;
+        dateInput.value = dateString;
+        paperCamera = { x: 210, y: 180, scale: 1 };
+
+        applyPaperCamera();
+        loadPaperItems();
+    }
+
+    function attachTextEditing(item, editableElement) {
+        function saveEditedText() {
+            item.content = sanitizeRichText(editableElement.innerHTML);
+            scheduleItemSave(item);
+        }
+
+        editableElement.addEventListener('input', saveEditedText);
+        editableElement.addEventListener('blur', saveEditedText);
+    }
+
+    /** Erstellt die sichtbare, frei verschiebbare Karte eines Tagebucheintrags. */
+    function renderPaperItem(item) {
+        const itemElement = document.createElement('article');
+        itemElement.className = 'paper-item';
+        itemElement.dataset.id = item.id;
+        itemElement.style.left = `${item.x}px`;
+        itemElement.style.top = `${item.y}px`;
+        itemElement.style.width = `${item.width}px`;
+        itemElement.style.height = `${item.height}px`;
+
+        const header = document.createElement('header');
+        const typeLabel = document.createElement('span');
+        const deleteButton = document.createElement('button');
+
+        const typeLabels = {
+            text: '✎ Tagebucheintrag',
+            image: '▧ Foto',
+            video: '▶ Video',
+            audio: '♫ Audio',
+            file: '▤ Dokument',
+            link: '↗ Link',
+            message: '☏ Nachricht'
+        };
+
+        typeLabel.textContent = typeLabels[item.kind] || item.kind;
+        deleteButton.textContent = '×';
+        deleteButton.title = 'Objekt löschen';
+        deleteButton.addEventListener('click', () => deletePaperItem(item, itemElement));
+
+        header.append(typeLabel, deleteButton);
+        itemElement.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'paper-body';
+        fillItemBody(body, item);
+
+        itemElement.appendChild(body);
+        paperCanvas.appendChild(itemElement);
+
+        attachItemDragging(header, item, itemElement, deleteButton);
+        observeItemSize(item, itemElement);
+        return itemElement;
+    }
+
+    async function deletePaperItem(item, itemElement) {
+        const accepted = confirm(
+            'Objekt entfernen? Die hochgeladene Datei bleibt als Sicherung erhalten.'
+        );
+        if (!accepted) {
+            return;
+        }
+
+        await fetch('/api/items/' + encodeURIComponent(item.id), {
+            method: 'DELETE'
+        });
+
+        paperItems = paperItems.filter(entry => entry.id !== item.id);
+        itemElement.remove();
+    }
+
+    /** Zeigt je nach Typ einen Editor, ein Bild, Audio, Video oder einen Link. */
+    function fillItemBody(body, item) {
+        if (item.kind === 'text' || item.kind === 'message') {
+            body.contentEditable = 'true';
+            body.spellcheck = true;
+            body.innerHTML = sanitizeRichText(item.content || '');
+            body.dataset.placeholder = 'Schreibe deine Geschichte ...';
+            attachTextEditing(item, body);
+
+            body.addEventListener('focus', () => {
+                lastFocusedTextId = item.id;
+            });
+            return;
+        }
+
+        if (item.kind === 'image') {
+            const image = document.createElement('img');
+            image.className = 'preview';
+            image.src = mediaUrl(item.media_id);
+            image.alt = item.content || 'Foto';
+            body.style.padding = '2px';
+            body.appendChild(image);
+            return;
+        }
+
+        if (item.kind === 'audio') {
+            const title = document.createElement('div');
+            title.textContent = item.content;
+
+            const audioPlayer = document.createElement('audio');
+            audioPlayer.controls = true;
+            audioPlayer.preload = 'none';
+            audioPlayer.src = mediaUrl(item.media_id);
+
+            body.append(title, audioPlayer);
+            return;
+        }
+
+        if (item.kind === 'video') {
+            addVideoPlayer(body, item);
+            return;
+        }
+
+        if (item.kind === 'file' || item.kind === 'link') {
+            const link = document.createElement('a');
+            link.textContent = item.content || 'Datei';
+            link.href = item.kind === 'file'
+                ? mediaUrl(item.media_id)
+                : item.content;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+
+            if (item.kind === 'file') {
+                link.download = item.content;
+            }
+            body.append('📎 ', link);
+        }
+    }
+
+    function addVideoPlayer(body, item) {
+        const previewLabel = document.createElement('label');
+        previewLabel.style.fontSize = '12px';
+
+        const previewCheckbox = document.createElement('input');
+        previewCheckbox.type = 'checkbox';
+        previewCheckbox.checked = Boolean(item.preview);
+
+        previewLabel.append(
+            previewCheckbox,
+            document.createTextNode(' GIF-Vorschau (stumm, Schleife)')
+        );
+
+        const videoPlayer = document.createElement('video');
+        videoPlayer.controls = true;
+        videoPlayer.preload = 'metadata';
+        videoPlayer.playsInline = true;
+        videoPlayer.src = mediaUrl(item.media_id);
+        videoPlayer.muted = previewCheckbox.checked;
+        videoPlayer.loop = previewCheckbox.checked;
+        videoPlayer.autoplay = previewCheckbox.checked;
+
+        previewCheckbox.addEventListener('change', () => {
+            const previewEnabled = previewCheckbox.checked;
+            item.preview = previewEnabled ? 1 : 0;
+
+            videoPlayer.muted = previewEnabled;
+            videoPlayer.loop = previewEnabled;
+
+            if (previewEnabled) {
+                videoPlayer.play().catch(() => {
+                    showStatus('Autoplay vom Browser blockiert');
+                });
+            } else {
+                videoPlayer.pause();
+            }
+
+            scheduleItemSave(item);
+        });
+
+        body.append(previewLabel, videoPlayer);
+        if (item.preview) {
+            videoPlayer.play().catch(() => {});
+        }
+    }
+
+    function attachItemDragging(header, item, element, deleteButton) {
+        header.addEventListener('pointerdown', pointerEvent => {
+            if (pointerEvent.button !== 0 || pointerEvent.target === deleteButton) {
+                return;
+            }
+
+            currentDrag = {
+                type: 'item',
+                id: item.id,
+                startPointerX: pointerEvent.clientX,
+                startPointerY: pointerEvent.clientY,
+                startItemX: item.x,
+                startItemY: item.y
+            };
+
+            header.setPointerCapture(pointerEvent.pointerId);
+            pointerEvent.preventDefault();
+        });
+
+        header.addEventListener('pointermove', pointerEvent => {
+            if (!currentDrag || currentDrag.type !== 'item' || currentDrag.id !== item.id) {
+                return;
+            }
+
+            const movementX = pointerEvent.clientX - currentDrag.startPointerX;
+            const movementY = pointerEvent.clientY - currentDrag.startPointerY;
+
+            item.x = currentDrag.startItemX + movementX / paperCamera.scale;
+            item.y = currentDrag.startItemY + movementY / paperCamera.scale;
+
+            element.style.left = `${item.x}px`;
+            element.style.top = `${item.y}px`;
+        });
+
+        header.addEventListener('pointerup', () => {
+            if (currentDrag && currentDrag.id === item.id) {
+                currentDrag = null;
+                scheduleItemSave(item);
+            }
+        });
+    }
+
+    function observeItemSize(item, element) {
+        const resizeObserver = new ResizeObserver(() => {
+            if (!element.isConnected) {
+                return;
+            }
+
+            const width = element.offsetWidth;
+            const height = element.offsetHeight;
+
+            if (width !== item.width || height !== item.height) {
+                item.width = width;
+                item.height = height;
+                scheduleItemSave(item);
+            }
+        });
+
+        resizeObserver.observe(element);
+    }
+
+    /** Bildschirmposition in Papierkoordinaten umrechnen. */
+    function screenToPaper(pointerEvent) {
+        const bounds = paperWorld.getBoundingClientRect();
+
+        return {
+            x: (pointerEvent.clientX - bounds.left - paperCamera.x) /
+                paperCamera.scale,
+            y: (pointerEvent.clientY - bounds.top - paperCamera.y) /
+                paperCamera.scale
+        };
+    }
+
+    function handlePaperPointerDown(pointerEvent) {
+        if (pointerEvent.button !== 0) {
+            return;
+        }
+        if (pointerEvent.target.closest('.paper-item')) {
+            return;
+        }
+        if (pointerEvent.target.closest('#paperToolbar')) {
+            return;
+        }
+
+        currentDrag = {
+            type: 'camera',
+            startPointerX: pointerEvent.clientX,
+            startPointerY: pointerEvent.clientY,
+            startCameraX: paperCamera.x,
+            startCameraY: paperCamera.y
+        };
+
+        paperWorld.setPointerCapture(pointerEvent.pointerId);
+        paperWorld.classList.add('panning');
+    }
+
+    function handlePaperPointerMove(pointerEvent) {
+        if (!currentDrag || currentDrag.type !== 'camera') {
+            return;
+        }
+
+        paperCamera.x = currentDrag.startCameraX +
+            pointerEvent.clientX - currentDrag.startPointerX;
+        paperCamera.y = currentDrag.startCameraY +
+            pointerEvent.clientY - currentDrag.startPointerY;
+
+        applyPaperCamera();
+    }
+
+    function handlePaperPointerUp() {
+        if (currentDrag && currentDrag.type === 'camera') {
+            currentDrag = null;
+        }
+        paperWorld.classList.remove('panning');
+    }
+
+    /** Zoomen um den Mauszeiger – gleiche Idee wie beim SVG-Kalender. */
+    function handlePaperWheel(pointerEvent) {
+        pointerEvent.preventDefault();
+
+        const oldScale = paperCamera.scale;
+        const requestedScale = oldScale * Math.exp(-pointerEvent.deltaY * 0.001);
+        const newScale = Math.min(3.5, Math.max(0.35, requestedScale));
+        const scaleRatio = newScale / oldScale;
+
+        paperCamera.x = pointerEvent.clientX -
+            (pointerEvent.clientX - paperCamera.x) * scaleRatio;
+        paperCamera.y = pointerEvent.clientY -
+            (pointerEvent.clientY - paperCamera.y) * scaleRatio;
+        paperCamera.scale = newScale;
+
+        applyPaperCamera();
+    }
+
+    /** Lade eine Datei zum Python-Server und lege eine Karte auf dem Papier ab. */
+    async function uploadFile(file, position) {
+        try {
+            showStatus('Lade ' + file.name + ' hoch ...');
+
+            const response = await fetch(
+                '/api/upload?name=' + encodeURIComponent(file.name),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': file.type || 'application/octet-stream'
+                    },
+                    body: file
+                }
+            );
+
+            if (!response.ok) {
+                const failure = await response.json();
+                throw new Error(failure.error || response.status);
+            }
+
+            const uploadedMedia = await response.json();
+            let itemKind = 'file';
+
+            if (file.type.startsWith('image/')) {
+                itemKind = 'image';
+            } else if (file.type.startsWith('video/')) {
+                itemKind = 'video';
+            } else if (file.type.startsWith('audio/')) {
+                itemKind = 'audio';
+            }
+
+            createPaperItem(itemKind, {
+                x: position.x,
+                y: position.y,
+                content: file.name,
+                media_id: uploadedMedia.id
+            });
+
+            showStatus('✓ ' + file.name + ' abgelegt');
+        } catch (error) {
+            showStatus('Import fehlgeschlagen: ' + error.message);
+        }
+    }
+
+    async function importFilesAtPosition(files, initialPosition) {
+        let position = { ...initialPosition };
+
+        for (const file of files) {
+            await uploadFile(file, position);
+            position = {
+                x: position.x + 32,
+                y: position.y + 32
+            };
+        }
+    }
+
+    async function handlePaperDrop(dragEvent) {
+        dragEvent.preventDefault();
+        dragDepth = 0;
+        dropIndicator.classList.remove('visible');
+
+        if (dragEvent.dataTransfer.files.length) {
+            await importFilesAtPosition(
+                [...dragEvent.dataTransfer.files],
+                screenToPaper(dragEvent)
+            );
+            return;
+        }
+
+        const droppedText = dragEvent.dataTransfer.getData('text/plain');
+        if (droppedText) {
+            const itemKind = /^https?:\/\//.test(droppedText) ? 'link' : 'message';
+            createPaperItem(itemKind, {
+                ...screenToPaper(dragEvent),
+                content: escapeHtml(droppedText)
+            });
+        }
+    }
+
+    function importNotesFromDesktop() {
+        let storedNotes = [];
+        try {
+            storedNotes = JSON.parse(
+                localStorage.getItem('midnight.notes.v5') || '[]'
+            );
+        } catch (error) {
+            console.warn('Notizblock konnte nicht gelesen werden:', error);
+        }
+
+        if (storedNotes.length === 0) {
+            showStatus('Der Notizblock ist noch leer');
+            return;
+        }
+
+        const content = storedNotes
+            .map(note => '<div>☐ ' + escapeHtml(note.text) + '</div>')
+            .join('');
+
+        createPaperItem('text', {
+            content: content,
+            width: 440,
+            height: 280
+        });
+
+        showStatus(`${storedNotes.length} Notizen als Tagebucheintrag übernommen`);
+    }
+
+    /** Fügt ein Bild in einen bestehenden Textblock ein (mit Textumfluss). */
+    function addFloatingImageToText() {
+        const textCard = paperCanvas.querySelector(
+            `.paper-item[data-id="${lastFocusedTextId}"]`
+        );
+        const textItem = paperItems.find(item => item.id === lastFocusedTextId);
+
+        if (!textCard || !textItem || !['text', 'message'].includes(textItem.kind)) {
+            showStatus('Zuerst in eine Textnotiz klicken');
+            return;
+        }
+
+        const editableBody = textCard.querySelector('[contenteditable]');
+        const imagePicker = document.createElement('input');
+        imagePicker.type = 'file';
+        imagePicker.accept = 'image/*';
+
+        imagePicker.addEventListener('change', async () => {
+            const imageFile = imagePicker.files[0];
+            if (!imageFile) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    '/api/upload?name=' + encodeURIComponent(imageFile.name),
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': imageFile.type },
+                        body: imageFile
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Upload fehlgeschlagen');
+                }
+
+                const uploadedMedia = await response.json();
+                const image = document.createElement('img');
+                image.src = mediaUrl(uploadedMedia.id);
+                image.className = 'float-left';
+                image.alt = imageFile.name;
+
+                editableBody.prepend(image);
+                textItem.content = sanitizeRichText(editableBody.innerHTML);
+                scheduleItemSave(textItem);
+            } catch (error) {
+                showStatus(error.message);
+            }
+        });
+
+        imagePicker.click();
+    }
+
+    function movePaperDate(numberOfDays) {
+        const newDate = new Date(selectedDay + 'T12:00:00');
+        newDate.setDate(newDate.getDate() + numberOfDays);
+
+        const year = newDate.getFullYear();
+        const month = String(newDate.getMonth() + 1).padStart(2, '0');
+        const day = String(newDate.getDate()).padStart(2, '0');
+        const nextDateString = `${year}-${month}-${day}`;
+
+        if (window.paperAPI) {
+            window.paperAPI.chooseDate(nextDateString);
+        }
+        openPaperDate(nextDateString);
+    }
+
+    // --- Ereignisse registrieren ------------------------------------------
+
+    paperWorld.addEventListener('pointerdown', handlePaperPointerDown);
+    paperWorld.addEventListener('pointermove', handlePaperPointerMove);
+    paperWorld.addEventListener('pointerup', handlePaperPointerUp);
+    paperWorld.addEventListener('wheel', handlePaperWheel, { passive: false });
+
+    paperOverlay.addEventListener('dragenter', dragEvent => {
+        dragEvent.preventDefault();
+        dragDepth++;
+        dropIndicator.classList.add('visible');
+    });
+
+    paperOverlay.addEventListener('dragover', dragEvent => {
+        dragEvent.preventDefault();
+    });
+
+    paperOverlay.addEventListener('dragleave', () => {
+        dragDepth--;
+        if (dragDepth <= 0) {
+            dragDepth = 0;
+            dropIndicator.classList.remove('visible');
+        }
+    });
+
+    paperOverlay.addEventListener('drop', handlePaperDrop);
+
+    document.querySelector('#paperAddText').addEventListener('click', () => {
+        createPaperItem('text', {
+            content: '<div>Mein Tagebuch – hier hineinschreiben …</div>'
+        });
+    });
+
+    document.querySelector('#paperAddMsg').addEventListener('click', () => {
+        const message = prompt('WhatsApp-Nachricht oder Text einfügen:');
+        if (message) {
+            createPaperItem('message', { content: escapeHtml(message) });
+        }
+    });
+
+    document.querySelector('#paperImportNotes').addEventListener(
+        'click', importNotesFromDesktop
+    );
+
+    document.querySelector('#paperAddLink').addEventListener('click', () => {
+        const address = prompt('Webadresse (https://...)');
+        if (address && /^https?:\/\//i.test(address)) {
+            createPaperItem('link', { content: address });
+        }
+    });
+
+    document.querySelector('#paperAddFiles').addEventListener('click', () => {
+        filePicker.click();
+    });
+
+    filePicker.addEventListener('change', async () => {
+        await importFilesAtPosition([...filePicker.files], {
+            x: 100 + Math.random() * 90,
+            y: 100 + Math.random() * 90
+        });
+        filePicker.value = '';
+    });
+
+    document.querySelector('#paperFloatImg').addEventListener(
+        'click', addFloatingImageToText
+    );
+
+    dateInput.addEventListener('change', () => {
+        if (window.paperAPI) {
+            window.paperAPI.chooseDate(dateInput.value);
+        }
+        openPaperDate(dateInput.value);
+    });
+
+    document.querySelector('#paperPrev').addEventListener('click', () => {
+        movePaperDate(-1);
+    });
+
+    document.querySelector('#paperNext').addEventListener('click', () => {
+        movePaperDate(1);
+    });
+
+    // Dies ist der einzige öffentliche Einstiegspunkt für den Kalender.
+    window.Paper = {
+        activate(shouldOpen, dateString) {
+            paperVisible = shouldOpen;
+            paperOverlay.classList.toggle('active', shouldOpen);
+            document.body.classList.toggle('paper-mode', shouldOpen);
+
+            if (shouldOpen && dateString !== selectedDay) {
+                openPaperDate(dateString);
+            }
+        }
+    };
+})();

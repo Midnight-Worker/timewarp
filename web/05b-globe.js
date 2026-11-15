@@ -179,9 +179,9 @@ function drawOrbitingYearCards(globeScene) {
         drawSvgText(yearCard, -91, -34, String(year), 39, '#d8fff5', 800);
 
         for (let line = 0; line < 6; line++) {
-            const y = -12 + line * 13;
+            const labelTop = -12 + line * 13;
             const lineColor = line % 2 ? '#2a5c70' : '#447e89';
-            drawSvgRectangle(yearCard, -91, y, 178, 6, lineColor);
+            drawSvgRectangle(yearCard, -91, labelTop, 178, 6, lineColor);
         }
     }
 }

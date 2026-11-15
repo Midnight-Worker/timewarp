@@ -1,38 +1,126 @@
-function n(tag, a= {
-} , parent=world) {
-    const e=document.createElementNS(NS, tag);
-    Object.entries(a).forEach(([k, v])=>e.setAttribute(k, v));
-    parent.appendChild(e);
-    return e
+/*
+ * 04-svg-utils.js – kleine, wiederverwendbare Zeichenfunktionen.
+ *
+ * Ein SVG-Element ist ein normales DOM-Element. Wir erstellen es
+ * mit createElementNS(), setzen Attribute und hängen es an die Welt.
+ */
+
+function createSvgElement(tagName, attributes = {}, parentElement = world) {
+    const element = document.createElementNS(svgNamespace, tagName);
+
+    for (const [attributeName, attributeValue] of Object.entries(attributes)) {
+        element.setAttribute(attributeName, attributeValue);
+    }
+
+    parentElement.appendChild(element);
+    return element;
 }
-function rect(p, x, y, w, h, fill, stroke='none', a= {
-} ) {
-    return n('rect', {
-        x, y, width:w, height:h, rx:8, fill, stroke, ...a
-    } , p)
+
+function drawSvgRectangle(
+    parentElement,
+    x,
+    y,
+    width,
+    height,
+    fillColor,
+    strokeColor = 'none',
+    extraAttributes = {}
+) {
+    return createSvgElement('rect', {
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        rx: 8,
+        fill: fillColor,
+        stroke: strokeColor,
+        ...extraAttributes
+    }, parentElement);
 }
-function text(p, x, y, s, size=18, color='#d8f6ff', weight=500, a= {
-} ) {
-    const e=n('text', {
-        x, y, fill:color, 'font-size':size, 'font-family':'system-ui,Segoe UI,sans-serif', 'font-weight':weight, ...a
-    } , p);
-    e.textContent=s;
-    return e
+
+function drawSvgText(
+    parentElement,
+    x,
+    y,
+    content,
+    fontSize = 18,
+    textColor = '#d8f6ff',
+    fontWeight = 500,
+    extraAttributes = {}
+) {
+    const textElement = createSvgElement('text', {
+        x: x,
+        y: y,
+        fill: textColor,
+        'font-size': fontSize,
+        'font-family': 'system-ui, Segoe UI, sans-serif',
+        'font-weight': fontWeight,
+        ...extraAttributes
+    }, parentElement);
+
+    textElement.textContent = content;
+    return textElement;
 }
-const person=id=>people.find(p=>p.id===id)||people[0];
-function eventsFor(dateKey, owner) {
-    return cards.filter(c=>dateInZone(utcOf(c), BASE)===dateKey&&(!owner||c.owner===owner));
+
+function findTeamMember(memberId) {
+    return teamMembers.find(member => member.id === memberId) || teamMembers[0];
 }
-function card(p, c, x, y, w, h, compact=false) {
-    const g=n('g', {
-        'data-card':c.id, style:'cursor:grab'
-    } , p), co=person(c.owner).color;
-    rect(g, x, y, w, h, co, co, {
-        'fill-opacity':compact?.48:.17, 'stroke-width':compact?0:2
-    } );
-    rect(g, x, y, 5, h, co);
-    if(!compact) {
-        text(g, x+13, y+Math.min(24, h-9), c.title.slice(0, Math.max(6, Math.floor(w/10))), Math.min(17, h*.38), '#f5ffff', 650);
-        if(h>55)text(g, x+13, y+49, person(c.owner).name, 12, '#c3d7e5')
-    } return g
+
+function appointmentsForDate(dateString, memberId = null) {
+    return appointments.filter(appointment => {
+        const appointmentDay = dateStringInTimeZone(
+            appointmentUtcDate(appointment),
+            homeTimeZone
+        );
+
+        const dateMatches = appointmentDay === dateString;
+        const memberMatches = !memberId || appointment.owner === memberId;
+        return dateMatches && memberMatches;
+    });
+}
+
+function renderAppointmentCard(
+    parentElement,
+    appointment,
+    x,
+    y,
+    width,
+    height,
+    compact = false
+) {
+    const member = findTeamMember(appointment.owner);
+    const accentColor = member.color;
+
+    const cardGroup = createSvgElement('g', {
+        'data-card': appointment.id,
+        style: 'cursor:grab'
+    }, parentElement);
+
+    drawSvgRectangle(cardGroup, x, y, width, height, accentColor, accentColor, {
+        'fill-opacity': compact ? 0.48 : 0.17,
+        'stroke-width': compact ? 0 : 2
+    });
+
+    drawSvgRectangle(cardGroup, x, y, 5, height, accentColor);
+
+    if (!compact) {
+        const maximumTitleLength = Math.max(6, Math.floor(width / 10));
+        const visibleTitle = appointment.title.slice(0, maximumTitleLength);
+        const titleY = y + Math.min(24, height - 9);
+        const titleFontSize = Math.min(17, height * 0.38);
+
+        drawSvgText(
+            cardGroup, x + 13, titleY, visibleTitle,
+            titleFontSize, '#f5ffff', 650
+        );
+
+        if (height > 55) {
+            drawSvgText(
+                cardGroup, x + 13, y + 49,
+                member.name, 12, '#c3d7e5'
+            );
+        }
+    }
+
+    return cardGroup;
 }

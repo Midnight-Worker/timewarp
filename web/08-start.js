@@ -1,66 +1,130 @@
-document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>setLevel(Number(b.dataset.level)));
-document.querySelector('#prev').onclick=()=>period(-1);
-document.querySelector('#next').onclick=()=>period(1);
-document.querySelector('#today').onclick=()=> {
-    focus=new Date();
-    draw();
-    fit()
-} ;
-window.addEventListener('keydown', e=> {
-    if(document.activeElement===input)return; if(e.key==='Escape') {
-        setLevel(level-1); return
-    } if(e.key==='PageUp'||e.key==='PageDown') {
-        e.preventDefault(); period(e.key==='PageUp'?-1:1); return
-    } if(e.key==='ArrowLeft'||e.key==='ArrowRight') {
-        e.preventDefault(); let dir=e.key==='ArrowLeft'?-1:1; if(level===0||level===-1) {
-            selectedYear+=dir; focus=new Date(selectedYear, focus.getMonth(), focus.getDate()); draw()
-        } else if(level===3) {
-            selectedWeek=Math.max(0, Math.min(monthWeeks().length-1, selectedWeek+dir)); draw()
-        } else period(dir); return
-    } if(e.key==='Enter'&&level===0) {
-        focus=new Date(selectedYear, focus.getMonth(), focus.getDate()); setLevel(1); return
-    } if(e.key==='Enter'&&level===3) {
-        setLevel(4, monthWeeks()[selectedWeek]); return
-    } if(e.key==='+'||e.key==='=')setLevel(level+1); if(e.key==='-')setLevel(level-1)
-} );
-document.querySelector('#openNotes').onclick=()=> {
-    document.querySelector('#notepad').style.display='block';
-    renderNotes()
-} ;
-document.querySelector('#closeNotes').onclick=()=>document.querySelector('#notepad').style.display='none';
-document.querySelector('#addNote').onclick=addNote;
-document.querySelector('#noteInput').addEventListener('keydown', e=> {
-    if(e.key==='Enter'&&!e.shiftKey) {
-        e.preventDefault(); addNote()
-    }
-} );
-function addNote() {
-    const field=document.querySelector('#noteInput'), value=field.value.trim();
-    if(!value)return;
-    notes.unshift( {
-        id:Date.now()+Math.random(), text:value
-    } );
-    field.value='';
-    saveNotes();
-    field.focus()
+/*
+ * 08-start.js
+ *
+ * Das Startmodul verbindet die Schaltflächen mit den Funktionen.
+ * Es enthält keine komplizierte Kalender- oder Kameramathematik.
+ */
+
+function openNotepad() {
+    const notepad = document.querySelector('#notepad');
+    notepad.style.display = 'block';
+    renderUnplannedNotes();
 }
-document.querySelector('#noteCalendar').onclick=()=> {
-    document.querySelector('#notepad').style.display='none';
-    setLevel(2)
-} ;
-svg.addEventListener('dragover', e=> {
-    if(e.dataTransfer.types.includes('text/plain'))e.preventDefault()
-} );
-svg.addEventListener('drop', e=> {
-    e.preventDefault(); const val=e.dataTransfer.getData('text/plain'); if(!val.startsWith('midnight-note:'))return; const id=Number(val.slice(14)); if(level===-1||level===0)return; const d=dateAt(point(e)); if(d)scheduleNote(id, d)
-} );
-renderNotes();
-window.addEventListener('resize', fit);
-window.paperAPI= {
-    back:()=>setLevel(5), chooseDate:(date)=> {
-        let d=new Date(date+'T12:00:00');
-        if(!isNaN(d))focus=d
+
+function closeNotepad() {
+    document.querySelector('#notepad').style.display = 'none';
+}
+
+function addUnplannedNote() {
+    const noteInput = document.querySelector('#noteInput');
+    const noteText = noteInput.value.trim();
+
+    if (!noteText) {
+        return;
     }
-} ;
-draw();
-fit();
+
+    const newNote = {
+        id: Date.now() + Math.random(),
+        text: noteText
+    };
+
+    unplannedNotes.unshift(newNote);
+    noteInput.value = '';
+
+    saveUnplannedNotes();
+    noteInput.focus();
+}
+
+function handleNoteDrop(pointerEvent) {
+    pointerEvent.preventDefault();
+
+    const draggedText = pointerEvent.dataTransfer.getData('text/plain');
+    const notePrefix = 'midnight-note:';
+
+    if (!draggedText.startsWith(notePrefix)) {
+        return;
+    }
+
+    if (currentViewLevel <= 0) {
+        return;
+    }
+
+    const noteId = Number(draggedText.slice(notePrefix.length));
+    const worldPoint = screenToWorld(pointerEvent);
+    const calendarDate = dateAtWorldPosition(worldPoint);
+
+    if (calendarDate) {
+        scheduleUnplannedNote(noteId, calendarDate);
+    }
+}
+
+// Ansichtsschaltflächen
+for (const button of document.querySelectorAll('[data-level]')) {
+    button.addEventListener('click', () => {
+        const chosenLevel = Number(button.dataset.level);
+        changeViewLevel(chosenLevel);
+    });
+}
+
+// Navigationsleiste
+const previousButton = document.querySelector('#prev');
+const nextButton = document.querySelector('#next');
+const todayButton = document.querySelector('#today');
+
+previousButton.addEventListener('click', () => moveThroughTime(-1));
+nextButton.addEventListener('click', () => moveThroughTime(1));
+todayButton.addEventListener('click', () => {
+    selectedDate = new Date();
+    renderCurrentScene();
+    fitCameraToScene();
+});
+
+// Notizblock
+const openNotesButton = document.querySelector('#openNotes');
+const closeNotesButton = document.querySelector('#closeNotes');
+const addNotesButton = document.querySelector('#addNote');
+const noteCalendarButton = document.querySelector('#noteCalendar');
+const noteInput = document.querySelector('#noteInput');
+
+openNotesButton.addEventListener('click', openNotepad);
+closeNotesButton.addEventListener('click', closeNotepad);
+addNotesButton.addEventListener('click', addUnplannedNote);
+
+noteCalendarButton.addEventListener('click', () => {
+    closeNotepad();
+    changeViewLevel(2);
+});
+
+noteInput.addEventListener('keydown', keyboardEvent => {
+    if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
+        keyboardEvent.preventDefault();
+        addUnplannedNote();
+    }
+});
+
+// Eine ungeplante Notiz kann per Drag-and-drop in einen Tag übernommen werden.
+svg.addEventListener('dragover', pointerEvent => {
+    if (pointerEvent.dataTransfer.types.includes('text/plain')) {
+        pointerEvent.preventDefault();
+    }
+});
+svg.addEventListener('drop', handleNoteDrop);
+
+// Fensteränderungen verändern das Seitenverhältnis unserer Kamera.
+window.addEventListener('resize', fitCameraToScene);
+
+// Schnittstelle zum Tagebuch-Modul
+window.paperAPI = {
+    back: () => changeViewLevel(5),
+    chooseDate: dateString => {
+        const chosenDate = new Date(`${dateString}T12:00:00`);
+        if (!Number.isNaN(chosenDate.getTime())) {
+            selectedDate = chosenDate;
+        }
+    }
+};
+
+// Jetzt darf die erste Szene gezeichnet werden.
+renderUnplannedNotes();
+renderCurrentScene();
+fitCameraToScene();

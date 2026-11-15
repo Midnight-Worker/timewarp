@@ -33,3 +33,13 @@ function nextDay(date) {
 
 Nicht jede Kurzform ist schlecht. Aber wenn eine Funktion Lernstoff
 versteckt, ist der verständliche Weg der bessere.
+
+## Python-Module (V9)
+
+- `main.py` startet nur die Anwendung.
+- `configuration.py` enthält alle zentralen Einstellungen.
+- `paper_database.py` kennt die SQLite-Tabellen.
+- `http_routes.py` verarbeitet HTTP-Anfragen; jeder Methodenname benennt seinen Zweck.
+
+Beim Umbenennen von JavaScript-Funktionen, die in mehreren Dateien
+verwendet werden, müssen **alle Aufrufstellen** mit geändert werden.

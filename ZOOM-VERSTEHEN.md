@@ -1,112 +1,178 @@
-# Wie unser Zoom funktioniert – Schritt für Schritt
+# Lerneinheit: Wie unsere Zoom-Kamera funktioniert
 
-Wir verwenden für die Kalenderwelt **SVG**. SVG ist eine Zeichenfläche mit
-einem eigenen Koordinatensystem. Die `viewBox` legt fest, welchen Ausschnitt
-wir betrachten. Anders als beim Skalieren eines Pixelbildes bleibt die Schrift
-und Geometrie scharf.
+Wir benutzen **SVG**. Du kannst dir SVG wie eine riesige Karte mit einem
+eigenen Koordinatensystem vorstellen. Unsere Kamera bestimmt, welchen Teil
+dieser Karte wir gerade sehen.
 
-## 1. Die vier Zahlen der Kamera
+Die zwei wichtigsten Dateien dafür sind:
 
-In `web/01-state.js` liegt der Zustand:
+- `web/06-camera.js` – Größe und Position des sichtbaren Ausschnitts
+- `web/07-input.js` – Mausrad, Mausposition und Zoomfaktor
 
-```js
-let view = { x: -1300, y: -700, w: 2600, h: 1480 };
+## 1. Eine Kamera mit vier Zahlen
+
+In `01-state.js` findest du:
+
+```javascript
+let cameraViewport = {
+    x: -1300,
+    y: -700,
+    w: 2600,
+    h: 1480
+};
 ```
 
-`x` und `y` sind die linke obere Ecke des sichtbaren Bereichs. `w` und `h`
-sind Breite und Höhe des sichtbaren Ausschnitts **in Weltkoordinaten**.
+`x` und `y` sind die linke obere Ecke. `w` (width) und `h` (height) sind
+Breite und Höhe des sichtbaren Ausschnitts.
 
-```js
-svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+In `updateSvgCamera()` werden diese Zahlen als `viewBox` gesetzt:
+
+```javascript
+const viewBox = [
+    cameraViewport.x,
+    cameraViewport.y,
+    cameraViewport.w,
+    cameraViewport.h
+].join(' ');
+
+svg.setAttribute('viewBox', viewBox);
 ```
 
-Wenn `view.w` **kleiner** wird, sieht man einen kleineren Teil der Welt, also
-**größer** gezoomt. Wenn `view.w` **größer** wird, sieht man mehr Welt.
+Eine kleinere `w`-Breite bedeutet: Wir sehen einen kleineren Teil der
+Welt. Die Gegenstände darin wirken größer. So funktioniert unser
+**geometrischer Zoom**.
 
-## 2. Zoomfaktor mit dem Mausrad
+## 2. Der Zoomfaktor
 
-In `web/07-input.js` benutzen wir:
+Das Mausrad liefert `deltaY`. Ein negatives `deltaY` bedeutet meist,
+dass wir hineinzoomen. In `handleCalendarWheel()` steht:
 
-```js
-const factor = Math.exp(e.deltaY * 0.00125);
+```javascript
+const zoomFactor = Math.exp(limitedWheelDelta * 0.00125);
 ```
 
-- Mausrad nach vorne: `deltaY` meist negativ -> `factor < 1` -> hineinzoomen
-- Mausrad zurück: `deltaY` meist positiv -> `factor > 1` -> herauszoomen
-- `Math.exp` liefert einen fließenden, immer positiven Faktor.
+`Math.exp()` erzeugt einen kontinuierlichen und stets positiven Faktor.
+Zum Beispiel:
 
-Die neue sichtbare Breite ist:
+- `zoomFactor = 0.5`: Sichtbare Breite halbiert sich – 2-fache Vergrößerung.
+- `zoomFactor = 1.0`: Keine Veränderung.
+- `zoomFactor = 2.0`: Sichtbare Breite verdoppelt sich – herauszoomen.
 
-```js
-view.w *= factor;
-view.h *= factor;
+Die Breite wird später so verändert:
+
+```javascript
+cameraViewport.w *= zoomFactor;
 ```
 
-In V7 wird die tatsächliche neue Größe außerdem mit `zoomWithin` und
-Zoomstufengrenzen abgestimmt.
+## 3. Warum bleibt der Mauszeiger über demselben Tag?
 
-## 3. Warum bleibt der Mauszeiger an derselben Weltstelle?
+Wenn du einfach nur `cameraViewport.w` veränderst, wird meist relativ
+zum linken Rand gezoomt. Wir wollen aber **genau an die Stelle unter
+dem Mauszeiger** zoomen.
 
-Angenommen, unter deiner Maus liegt ein Kalendertag bei `p.x`.
-
-Vor dem Zoom beträgt seine relative horizontale Position innerhalb des
-Ausschnitts:
+Die horizontale Position eines Weltpunkts in der Kamera ist:
 
 ```text
-(p.x - view.x) / view.w
+relativePosition = (worldPoint.x - cameraViewport.x) / cameraViewport.w
 ```
 
-Nach dem Zoom soll diese Zahl unverändert bleiben. Daraus folgt:
+Nach dem Zoomen soll diese relative Position gleich bleiben. Deshalb
+verwenden wir:
 
-```js
-view.x = p.x - (p.x - view.x) * factor;
-view.y = p.y - (p.y - view.y) * factor;
+```javascript
+cameraViewport.x = worldPoint.x - (
+    worldPoint.x - cameraViewport.x
+) * zoomFactor;
 ```
 
-**Mini-Beispiel:** Sichtbarer Ausschnitt startet bei `x=0`, ist `1000` breit
-und die Maus zeigt auf die Weltstelle `x=250`. Wir zoomen mit `factor=0.5`.
+Dasselbe geschieht mit `y`.
+
+### Beispiel mit echten Zahlen
+
+Am Anfang:
 
 ```text
-vorher:  x = 0,    Breite = 1000
-nachher: x = 125,  Breite = 500
+Linker Rand:            0
+Sichtbare Breite:    1000
+Weltpunkt der Maus:   250
 ```
 
-Der Punkt `250` liegt vorher bei 25 % der Ansicht und nachher noch immer bei
-25 %. Dadurch fühlt sich die Kamera an, als würde sie unter die Maus fliegen.
+Wir zoomen mit `zoomFactor = 0.5`.
 
-## 4. Bildschirmkoordinaten zu Weltkoordinaten
+Die neue Kameraposition ist:
 
-Ein Mausklick hat Browser-Koordinaten (`clientX`, `clientY`). Unsere SVG-Karten
-liegen aber in Weltkoordinaten. Die Umrechnung übernimmt:
+```text
+newX = 250 - (250 - 0) * 0.5
+newX = 125
+```
 
-```js
-function point(event) {
-    const p = svg.createSVGPoint();
-    p.x = event.clientX;
-    p.y = event.clientY;
-    return p.matrixTransform(svg.getScreenCTM().inverse());
+Und die neue sichtbare Breite lautet `500`. Der Mauspunkt liegt vor und
+nach dem Zoom bei 25 Prozent der sichtbaren Fläche!
+
+## 4. Wie findet JavaScript den Weltpunkt der Maus?
+
+Die Maus liefert Pixelpositionen auf dem Bildschirm. Der Kalender
+arbeitet aber mit SVG-Weltkoordinaten. Das übernimmt:
+
+```javascript
+function screenToWorld(pointerEvent) {
+    const screenPoint = svg.createSVGPoint();
+    screenPoint.x = pointerEvent.clientX;
+    screenPoint.y = pointerEvent.clientY;
+
+    const inverseMatrix = svg.getScreenCTM().inverse();
+    return screenPoint.matrixTransform(inverseMatrix);
 }
 ```
 
-`getScreenCTM()` beschreibt den Weg von SVG nach Bildschirm; `inverse()`
-kehrt diesen Weg um. So weiß die Anwendung, welcher Tag unter der Maus liegt.
+`getScreenCTM()` ist eine Transformationsmatrix von SVG zu
+Bildschirmkoordinaten. Durch `.inverse()` drehen wir diese Umrechnung um.
 
-## 5. Zwei verschiedene Arten von Zoom
+Die Formel musst du nicht auswendig lernen – wichtig ist zunächst,
+**warum** wir eine Koordinatenumrechnung brauchen.
 
-**Geometrischer Zoom:** Innerhalb einer Ansicht ändern wir `viewBox`; alles
-wird physisch größer oder kleiner.
+## 5. Geometrischer Zoom und semantischer Zoom
 
-**Semantischer Zoom:** Bei einer Schwelle wechselt die Darstellung, etwa von
-`Monat` zu `Woche` oder `Tag`, und mehr Informationen werden gezeichnet.
-Dafür gibt es `setLevel(...)` und `draw()` in `web/06-camera.js`.
+Innerhalb einer Stufe zoomen wir rein geometrisch. Wird eine bestimmte
+Schwelle erreicht, wechselt die Anwendungsdarstellung:
 
-Aktuell sind das noch **sichtbare Stufenwechsel** und keine nahtlos animierten
-3D-Kamerafahrten.
+```text
+Schreibtisch → Globus → Jahresdeck → Jahr → Monat → Woche → Tag → Papier
+```
 
-## 6. Deine erste Übung
+Das ist der **semantische Zoom**. Der Benutzer bekommt mehr Details,
+und es werden andere Objekte gezeichnet. In den Dateien heißen die
+Funktionen dafür `changeViewLevel()` und `renderCurrentScene()`.
 
-Probiere in `web/07-input.js` den Faktor `0.00125` durch `0.0007` zu ersetzen.
-Der Zoom wird **langsamer/feiner**. Bei `0.002` wird er deutlich schneller.
+Wichtig: Diese Übergänge sind noch keine vollständigen 3D-Kameraflüge.
 
-Das ist eine gute erste Änderung, weil du sofort den Unterschied merkst und
-nichts am Datenmodell ändern musst.
+## 6. Das Papier hat eine eigene Kamera
+
+Das Endlospapier ist **keine SVG-Ansicht**, sondern eine HTML-Fläche.
+Es wird mit CSS-Transformationen verschoben und vergrößert:
+
+```javascript
+paperCanvas.style.transform =
+    `translate(${paperCamera.x}px, ${paperCamera.y}px) ` +
+    `scale(${paperCamera.scale})`;
+```
+
+Der mathematische Gedanke ist derselbe. Nur die Darstellungstechnik ist
+anders. Vergleiche `handlePaperWheel()` mit `handleCalendarWheel()`.
+
+## 7. Kleine Übungen
+
+**Übung A:** Ändere in `07-input.js` den Faktor `0.00125` auf `0.0007`.
+Bewege anschließend das Mausrad: Der Zoom wird langsamer.
+
+**Übung B:** In `06-camera.js` werden die Zoomstufen mit Namen versehen.
+Ändere dort `11 Jahre` in `Jahresdeck`.
+
+**Übung C:** In `05a-desktop.js` findest du `drawDesktopNewspaper()`.
+Ändere den Schriftzug der Zeitung und die Hintergrundfarbe.
+
+**Übung D:** Ändere bei `drawDesktopNotepad()` die Anzahl der sichtbaren
+Notizen von sieben auf fünf.
+
+Damit lernst du nicht nur die Zoom-Mathematik, sondern auch, wie die
+Verantwortlichkeiten unserer Dateien zusammenhängen.
