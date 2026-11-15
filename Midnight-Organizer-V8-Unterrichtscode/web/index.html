@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Midnight Organizer · Zeitwelt V8 · Unterrichtscode</title>
+        <link rel="stylesheet" href="/app.css">
+        <link rel="stylesheet" href="/paper.css">
+    </head>
+    <body>
+        <svg id="space" xmlns="http://www.w3.org/2000/svg" aria-label="Zoombarer Kalender">
+            <defs>
+                <radialGradient id="ocean" cx="35%" cy="28%">
+                    <stop offset="0" stop-color="#3e9fb3"/>
+                    <stop offset=".5" stop-color="#166b91"/>
+                    <stop offset="1" stop-color="#062339"/>
+                </radialGradient>
+                <radialGradient id="light" cx="28%" cy="24%">
+                    <stop offset="0" stop-color="#c4fbe4" stop-opacity=".36"/>
+                    <stop offset="1" stop-color="#185078" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="northTint" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#f4bd7b" stop-opacity=".3"/>
+                    <stop offset="1" stop-color="#f4bd7b" stop-opacity="0"/>
+                </linearGradient>
+                <linearGradient id="southTint" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0" stop-color="#75c9ff" stop-opacity=".25"/>
+                    <stop offset="1" stop-color="#75c9ff" stop-opacity="0"/>
+                </linearGradient>
+                <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="12" stdDeviation="17" flood-color="#000" flood-opacity=".7"/>
+                </filter>
+                <pattern id="stars" width="215" height="190" patternUnits="userSpaceOnUse">
+                    <circle cx="19" cy="36" r="1.4" fill="#b1d7e9" opacity=".7"/>
+                    <circle cx="170" cy="123" r="1" fill="#c5e8f7" opacity=".44"/>
+                    <circle cx="107" cy="177" r="1.9" fill="#71adcb" opacity=".36"/>
+                </pattern>
+                <clipPath id="earthClip">
+                    <circle cx="0" cy="0" r="350"/>
+                </clipPath>
+            </defs>
+            <g id="camera">
+                <rect x="-9000" y="-9000" width="18000" height="18000" fill="url(#stars)" pointer-events="none"/>
+                <g id="world">
+                </g>
+            </g>
+        </svg>
+        <div id="top">
+            <div class="glass">
+                <div class="brand">✦ MIDNIGHT ORGANIZER</div>
+                <div class="minor" id="range">ZEITPLANET</div>
+                <div id="zoomtrack">
+                    <div id="zoomfill">
+                    </div>
+                </div>
+            </div>
+            <div class="glass buttons" id="levels">
+                <button data-level="-1">Schreibtisch</button>
+                <button data-level="0">Globus</button>
+                <button data-level="1">Jahresdeck</button>
+                <button data-level="2">Jahr</button>
+                <button data-level="3">Monat</button>
+                <button data-level="4">Woche</button>
+                <button data-level="5">Tag</button>
+                <button data-level="6">Endlospapier</button>
+                <button id="prev">◀</button>
+                <button id="next">▶</button>
+                <button id="today">Heute</button>
+            </div>
+            <div class="glass" id="people">
+            </div>
+        </div>
+        <div id="tray">
+            <button id="openNotes">✎ Notizblock (<span id="noteCount">0</span>)</button>
+            <small>Notizen auf einen Kalendertag ziehen</small>
+        </div>
+        <section id="notepad">
+            <button id="closeNotes" style="float:right">✕</button>
+            <h2>✎ Gedankensammlung</h2>
+            <p class="hint">Gedanken aufschreiben · Enter übernimmt · Notiz auf Kalender ziehen</p>
+            <textarea id="noteInput" placeholder="Was geht dir durch den Kopf?">
+            </textarea>
+            <div style="display:flex;gap:7px;margin-top:8px">
+                <button id="addNote">+ Notiz hinzufügen</button>
+                <button id="noteCalendar">Zum Kalender</button>
+            </div>
+            <ul id="noteList">
+            </ul>
+        </section>
+        <div id="tip">🌍 Zeitzonen folgen den echten Sommer-/Winterzeitregeln des jeweiligen Datums. <br>In der Tagesansicht: Personen anklicken, um Kalender einzublenden.</div>
+        <section id="paperOverlay" aria-label="Endlos-Tagebuch">
+            <div id="paperWorld">
+                <div id="paperCanvas">
+                </div>
+            </div>
+            <nav id="paperToolbar">
+                <button onclick="window.paperAPI?.back()">← Zeitkalender</button>
+                <button id="paperPrev">◀ Tag</button>
+                <label>Datum <input id="paperDay" type="date">
+                </label>
+                <button id="paperNext">Tag ▶</button>
+                <button id="paperAddText">✎ Text</button>
+                <button id="paperAddMsg">☏ Nachricht</button>
+                <button id="paperImportNotes">✎ Notizblock übernehmen</button>
+                <button id="paperAddLink">↗ Link</button>
+                <button id="paperAddFiles">＋ Fotos / Dateien</button>
+                <button id="paperFloatImg">▧ Bild in Text</button>
+                <input id="paperFiles" type="file" multiple hidden>
+                <span id="paperMsg">Tagebuch</span>
+            </nav>
+            <div id="paperHint">Leere Fläche ziehen: bewegen · Mausrad: zoomen · Objekttitel ziehen: bewegen · Ecke ziehen: Größe ändern</div>
+            <div id="paperDrop">Hier ablegen: Bilder · Audio · Videos · Dokumente</div>
+        </section>
+        <div id="bottom">
+            <div class="bubble" id="status">Mausrad: fein zoomen · Fläche ziehen: bewegen · Doppelklick: öffnen</div>
+            <div class="bubble">← → Wochenauswahl · Enter: öffnen · Esc: herauszoomen · Bild ↑↓: blättern</div>
+        </div>
+        <input id="editor" aria-label="Kartentitel bearbeiten" maxlength="140"/>
+        <script src="/01-state.js">
+        </script>
+        <script src="/02-time.js">
+        </script>
+        <script src="/03-storage.js">
+        </script>
+        <script src="/04-svg-utils.js">
+        </script>
+        <script src="/05a-desktop.js"></script>
+        <script src="/05b-globe.js"></script>
+        <script src="/05c-calendar-scenes.js"></script>
+        <script src="/06-camera.js">
+        </script>
+        <script src="/07-input.js">
+        </script>
+        <script src="/08-start.js">
+        </script>
+        <script src="/paper.js">
+        </script>
+    </body>
+</html>
