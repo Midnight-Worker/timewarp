@@ -18,6 +18,8 @@ from configuration import (
     WEB_DIRECTORY,
 )
 from calendar_database import read_calendar, replace_calendar
+from calendar_paper_bridge import get_unplanned_paper_entries
+from appointment_positions import save_position
 from paper_database import (
     ALLOWED_PAPER_ITEM_KINDS,
     PAPER_ITEM_FIELDS,
@@ -25,10 +27,15 @@ from paper_database import (
 )
 
 
+from graph_routes import handle_graph_get, handle_graph_post, handle_graph_delete
+
 from timeline_routes import (
     handle_timeline_get,
     handle_timeline_post,
     handle_timeline_delete,
+    handle_links_get,
+    handle_links_post,
+    handle_links_delete,
 )
 
 
@@ -88,8 +95,20 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
             self.send_web_asset(file_name)
             return
 
+        if requested_path == "/api/free-graph":
+            handle_graph_get(self, request_url)
+            return
+
+        if requested_path == "/api/timeline-links":
+            handle_links_get(self)
+            return
+
         if requested_path in ("/api/timeline", "/api/timeline/counts"):
             handle_timeline_get(self, request_url)
+            return
+
+        if requested_path == "/api/calendar/inbox":
+            self.send_http_response(200, get_unplanned_paper_entries())
             return
 
         if requested_path == "/api/calendar":
@@ -180,7 +199,24 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         requested_path = urlparse(self.path).path
-        if requested_path == "/api/timeline":
+        if requested_path.startswith("/api/free-graph/"):
+            handle_graph_post(self, requested_path)
+        elif requested_path == "/api/timeline-links":
+            handle_links_post(self)
+        elif requested_path == "/api/appointment-paper-position":
+            try:
+                data = self.read_json_request()
+                known_ids = {
+                    str(item["id"]) for item in read_calendar()["appointments"]
+                }
+                appointment_id = str(data["appointment_id"])
+                if appointment_id not in known_ids:
+                    raise ValueError("Termin nicht vorhanden")
+                save_position(appointment_id, data["paper_x"], data["paper_y"])
+                self.send_http_response(200, {"ok": True})
+            except (KeyError, ValueError, TypeError) as error:
+                self.send_http_response(400, {"error": str(error)})
+        elif requested_path == "/api/timeline":
             handle_timeline_post(self)
         elif requested_path == "/api/upload":
             self.receive_media_upload()
@@ -304,6 +340,12 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         requested_path = urlparse(self.path).path
+        if requested_path.startswith("/api/free-graph/connection/"):
+            handle_graph_delete(self, requested_path)
+            return
+        if requested_path.startswith("/api/timeline-links/"):
+            handle_links_delete(self, requested_path)
+            return
         if requested_path.startswith("/api/timeline/"):
             handle_timeline_delete(self, requested_path)
             return

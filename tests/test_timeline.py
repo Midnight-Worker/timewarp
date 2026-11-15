@@ -41,6 +41,29 @@ class TimelineDatabaseTests(unittest.TestCase):
         timeline_database.delete_entry('test-1')
         self.assertEqual(timeline_database.get_entries('2026-11-15', '2026-11-15'), [])
 
+    def test_positions_and_relationships(self):
+        for identifier, hour in (("a", "10:15"), ("b", "12:00")):
+            timeline_database.save_entry({
+                "id": identifier,
+                "kind": "text",
+                "local_time": f"2026-11-15T{hour}",
+                "content": "Eine Geschichte",
+                "paper_x": 120,
+                "paper_y": 220,
+            })
+
+        entry = timeline_database.get_entries("2026-11-15", "2026-11-15")[0]
+        self.assertEqual(entry["paper_x"], 120)
+        self.assertEqual(entry["paper_y"], 220)
+
+        connection_id = timeline_database.create_link("a", "b", "abhaengigkeit")
+        self.assertEqual(len(timeline_database.get_links()), 1)
+        with self.assertRaises(ValueError):
+            timeline_database.create_link("a", "b", "abhaengigkeit")
+
+        timeline_database.delete_link(connection_id)
+        self.assertEqual(timeline_database.get_links(), [])
+
     def test_invalid_time_is_rejected(self):
         with self.assertRaises(ValueError):
             timeline_database.save_entry({

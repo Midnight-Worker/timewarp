@@ -15,6 +15,8 @@ from http_routes import OrganizerRequestHandler
 from paper_database import prepare_storage
 from calendar_database import create_calendar_tables
 from timeline_database import create_timeline_table
+from graph_database import create_graph_tables
+from appointment_positions import create_position_table
 
 
 def open_application_window(application_url):
@@ -50,6 +52,8 @@ def start_application():
     prepare_storage()
     create_calendar_tables()
     create_timeline_table()
+    create_graph_tables()
+    create_position_table()
 
     server_address = (SERVER_HOST, SERVER_PORT)
     http_server = ThreadingHTTPServer(

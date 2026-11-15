@@ -88,3 +88,60 @@
 .timeline-entry a { overflow-wrap:anywhere; color:#175b79; }
 .timeline-entry label { font-size: 13px; }
 .timeline-tip { color:#617888; font-size: 12px; }
+
+/* V17: Jede Stundenfläche ist ein freies Blatt mit Positionskoordinaten. */
+.timeline-page { position: relative; }
+.timeline-entries {
+    position: relative;
+    display: block;
+    min-height: 65vh;
+    overflow: visible;
+}
+.timeline-entry {
+    position: absolute;
+    width: min(550px, calc(100% - 45px));
+    max-width: none;
+    box-sizing: border-box;
+}
+.timeline-entry.moving { z-index: 3; box-shadow: 0 16px 40px #405c7470; }
+.timeline-drag-handle { cursor: grab; user-select: none; }
+.timeline-entry.moving .timeline-drag-handle { cursor: grabbing; }
+.timeline-connection-handle {
+    border: 2px solid #468ca6;
+    border-radius: 50%;
+    background: #e4f5f9;
+    color: #357891;
+    font-size: 18px;
+    height: 28px;
+    width: 28px;
+    cursor: crosshair;
+    flex: 0 0 auto;
+}
+#timelineOverlay { position: fixed; }
+#timelineLinkOverlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+#timelineLinkOverlay .timeline-link-path {
+    pointer-events: stroke;
+    cursor: pointer;
+}
+#timelineScroller { position: relative; }
+#timelineToolbar { position: relative; z-index: 6; }
+.timeline-tip { margin: 6px 0; }
+
+/* Projektion desselben Termins auf die Papierwelt, kein zweiter Datensatz. */
+.timeline-calendar-appointment {
+    border-left-color: #d49c4b;
+    background: #fffaf0;
+}
+.timeline-calendar-appointment h3 { margin: 6px 0; }
+.timeline-appointment-note { white-space: pre-wrap; }
+
+/* Beziehungen gehören ab V19 ausschließlich auf das freie Endlospapier. */
+#timelineRelationType, #timelineManageLinks, #timelineLinkOverlay { display: none !important; }
+.timeline-connection-handle { display: none !important; }

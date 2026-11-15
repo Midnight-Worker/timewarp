@@ -142,3 +142,36 @@ Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trell
 - [ ] UTC + Zeitzonen für Sommerzeit-Sonderfälle
 - [ ] Texte, Bilder und Medien auf dem neuen Zeitpapier frei positionieren
 - [ ] TUI und Ionic/Capacitor als weitere API-Clients
+
+
+## V17: Vereintes Zeitpapier
+
+- [x] Uhrzeiten stehen am linken Rand des frei belegbaren Stundenpapiers
+- [x] Tagebucheinträge innerhalb einer Stunde frei bewegen und Position speichern
+- [x] Stundenabschnitte wachsen mit dem platzierten Inhalt
+- [x] Beziehungs- und Abhängigkeitsbahnen zwischen Einträgen ziehen und speichern
+- [ ] Altbestand der bisherigen freien Papieransicht vollständig ins Zeitpapier migrieren
+- [ ] Beziehungen über noch nicht geladene Tage als angeheftete Randpfeile anzeigen
+- [ ] Automatische Linienführung und Kollisionserkennung für stark gefüllte Seiten
+
+
+## V18 – Gemeinsame Terminidentität
+
+- [x] Kalendertermine erscheinen als verknüpfte Objektkarten auf dem Zeitpapier.
+- [x] Bearbeitung einer Papier-Terminkarte öffnet denselben Kalendertermin.
+- [x] Beziehungen können Kalendertermine und freie Papierobjekte verbinden.
+- [x] Ungeplante Zeitpapiernotizen im Kalender-Vorrat auflisten und einplanen.
+- [x] Kalendertermine referenzieren die Ursprungsnotiz über `source_entry_id`.
+- [x] Freie Textnotizen der alten Papieransicht im Kalender-Vorrat anbieten.
+- [ ] Frühere freie Papieransicht vollständig in das einheitliche Modell überführen.
+- [ ] Globale revisionssichere Speicherung aller Papiergeometrien und Beziehungen.
+
+
+## V19 – Gemeinsames Graphpapier
+
+- [x] Zeitpapier-Notizen als andersfarbige Gedankenblasen im Kalender markieren
+- [x] Zeitpapier- und Kalenderobjekte im freien Endlospapier anzeigen
+- [x] Graphbeziehungen auf dem freien Endlospapier in SQLite speichern
+- [x] Medien per Drag-and-drop als Kopien ablegen; Bildvorschau direkt sichtbar
+- [ ] Graph über alle Tage und Benutzer mit frei wählbaren Zeithorizonten
+- [ ] Zeitpapiernotizen unmittelbar beim Ändern auf offenem Papier aktualisieren

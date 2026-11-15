@@ -55,6 +55,7 @@
             body: JSON.stringify(entry)
         });
         setStatus('✓ gespeichert');
+        window.PaperCalendarIntegration?.refreshInbox();
         if (window.TimelineShadows) {
             window.TimelineShadows.refresh();
         }
@@ -156,6 +157,47 @@
         const header = document.createElement('div');
         header.className = 'timeline-entry-header';
 
+        if (entry.kind === 'appointment') {
+            // Ein Termin wird niemals als zweiter Zeitpapier-Datensatz
+            // gespeichert. Wir bearbeiten direkt das Kalenderobjekt.
+            const timeLabel = document.createElement('strong');
+            timeLabel.textContent = entry.local_time.slice(11, 16);
+
+            const typeLabel = document.createElement('span');
+            typeLabel.textContent = 'Kalendertermin · ' + entry.owner;
+
+            const editButton = document.createElement('button');
+            editButton.type = 'button';
+            editButton.textContent = '✎ Termin bearbeiten';
+            editButton.addEventListener('click', () => {
+                const appointment = appointments.find(item =>
+                    String(item.id) === String(entry.appointment_id)
+                );
+                if (!appointment) {
+                    setStatus('Termin wird noch geladen. Bitte erneut versuchen.');
+                    return;
+                }
+                openAppointmentEditor(appointment);
+            });
+
+            const title = document.createElement('h3');
+            title.textContent = entry.content;
+
+            const duration = document.createElement('p');
+            duration.textContent = `Dauer: ${entry.duration} Minuten`;
+
+            header.append(timeLabel, typeLabel, editButton);
+            card.classList.add('timeline-calendar-appointment');
+            card.append(header, title, duration);
+            if (entry.source_content) {
+                const originalNote = document.createElement('p');
+                originalNote.className = 'timeline-appointment-note';
+                originalNote.textContent = entry.source_content;
+                card.appendChild(originalNote);
+            }
+            return card;
+        }
+
         const timeInput = document.createElement('input');
         timeInput.type = 'time';
         timeInput.step = 60;
@@ -168,6 +210,7 @@
             const newHourContainer = getHourContainer(entry.local_time);
             if (newHourContainer) {
                 newHourContainer.appendChild(card);
+                window.TimelineBoard?.refreshLayout();
             }
         });
 
@@ -185,6 +228,7 @@
                 });
                 clearTimeout(saveTimers.get(entry.id));
                 card.remove();
+                window.TimelineBoard?.entryDeleted(entry.id);
                 setStatus('Eintrag gelöscht');
                 window.TimelineShadows?.refresh();
             } catch (error) {
@@ -257,9 +301,31 @@
         return card;
     }
 
+    async function saveAppointmentPaperPosition(entry) {
+        const response = await fetch('/api/appointment-paper-position', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                appointment_id: entry.appointment_id,
+                paper_x: entry.paper_x,
+                paper_y: entry.paper_y
+            })
+        });
+        if (!response.ok) {
+            setStatus('Terminposition konnte nicht gespeichert werden');
+        }
+    }
+
     function renderEntry(entry) {
         const container = getHourContainer(entry.local_time);
-        if (container) container.appendChild(createEntryElement(entry));
+        if (container) {
+            const card = createEntryElement(entry);
+            container.appendChild(card);
+            const saveCardPosition = entry.kind === 'appointment'
+                ? saveAppointmentPaperPosition
+                : scheduleSave;
+            window.TimelineBoard?.mountEntry(card, entry, saveCardPosition);
+        }
     }
 
     function createIdentifier() {
@@ -322,6 +388,7 @@
             if (!firstLoadedDay || dateString < firstLoadedDay) firstLoadedDay = dateString;
             if (!lastLoadedDay || dateString > lastLoadedDay) lastLoadedDay = dateString;
             for (const entry of entries) renderEntry(entry);
+            window.TimelineBoard?.refreshLayout();
         } catch (error) {
             setStatus('Laden fehlgeschlagen: ' + error.message);
         } finally {
@@ -355,23 +422,30 @@
             `.timeline-day[data-day="${dateString}"]`
         );
         if (selectedDay) scroller.scrollTop = selectedDay.offsetTop - scroller.offsetTop;
-        setStatus('Zeitpapier bereit');
+        // Verbindungen werden jetzt nur im freien Endlospapier gezeichnet.
+        window.TimelineBoard?.refreshLayout();
+        setStatus('Zeitpapier bereit · Freies Endlospapier für Beziehungen öffnen');
     }
 
     function close() {
         active = false;
         overlay.classList.remove('active');
+        window.TimelineBoard?.hideLinks();
     }
 
     scroller.addEventListener('scroll', () => {
         extendTimeline();
+        window.TimelineBoard?.refreshLinks();
     }, { passive: true });
 
     document.querySelector('#timelineBack').addEventListener('click', () => {
         close();
         window.paperAPI?.back();
     });
-    document.querySelector('#timelineFreePaper').addEventListener('click', close);
+    document.querySelector('#timelineFreePaper').addEventListener('click', () => {
+        close();
+        window.Paper?.refreshFreePaper();
+    });
     document.querySelector('#paperOpenTimeline').addEventListener('click', () => {
         open(document.querySelector('#paperDay').value);
     });

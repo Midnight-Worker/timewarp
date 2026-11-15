@@ -1,45 +1,79 @@
 /*
- * timeline-shadows.js
- * Blaugraue Spuren zeigen, an welchen Tagen Tagebuchmaterial liegt.
- * Die Markierungen sind bewusst nicht anklickbar und überdecken keine Termine.
+ * Zeitpapier-Spuren im Kalender.
+ * Notizen bekommen eine sanfte, violette Gedankenblase statt eines
+ * vollständigen Textblocks. Die Einträge selbst bleiben im Tagebuch.
  */
 (() => {
+    'use strict';
+
     const entryCounts = new Map();
-    let refreshTimer = null;
 
     async function refresh() {
-        const year = selectedDate.getFullYear();
-        const from = `${year - 1}-01-01`;
-        const to = `${year}-12-31`;
-        const response = await fetch(`/api/timeline/counts?from=${from}&to=${to}`);
-        if (!response.ok) return;
+        const selectedYear = selectedDate.getFullYear();
+        const firstDay = `${selectedYear - 1}-01-01`;
+        const lastDay = `${selectedYear + 1}-12-31`;
+
+        const response = await fetch(
+            `/api/timeline/counts?from=${firstDay}&to=${lastDay}`
+        );
+        if (!response.ok) {
+            return;
+        }
+
         const counts = await response.json();
         entryCounts.clear();
-        for (const [day, count] of Object.entries(counts)) {
-            entryCounts.set(day, count);
+
+        for (const [day, amount] of Object.entries(counts)) {
+            entryCounts.set(day, amount);
         }
-        // Kalender nur neu zeichnen, wenn die Eintragsdichte sich geändert hat.
-        if (typeof renderCurrentScene === 'function') renderCurrentScene();
+        renderCurrentScene();
     }
 
     function drawShadow(parent, day, x, y, width, height) {
-        const count = entryCounts.get(day) || 0;
-        if (count === 0) return;
+        const numberOfNotes = entryCounts.get(day) || 0;
+        if (!numberOfNotes) {
+            return;
+        }
 
-        const opacity = Math.min(0.35, 0.09 + count * 0.035);
-        const group = createSvgElement('g', {
-            'pointer-events': 'none'
+        const bubbleWidth = Math.min(width * 0.7, 115);
+        const bubbleHeight = Math.min(height * 0.5, 43);
+        const bubbleX = x + Math.max(5, width - bubbleWidth - 9);
+        const bubbleY = y + Math.max(5, height - bubbleHeight - 8);
+        const bubble = createSvgElement('g', {
+            'pointer-events': 'none',
+            opacity: 0.55
         }, parent);
-        drawSvgRectangle(group, x, y, width, height, '#98b4c9', 'none', {
-            'fill-opacity': opacity,
-            rx: 8
-        });
-        drawSvgText(group, x + 8, y + Math.min(height - 5, 24),
-            `◧ ${count}`, 15, '#aac8d6', 600);
+
+        // Die Silhouette ist bewusst keine normale Termin-Karte.
+        const bubbleShape = createSvgElement('path', {
+            d: [
+                `M ${bubbleX + 12} ${bubbleY}`,
+                `H ${bubbleX + bubbleWidth - 12}`,
+                `Q ${bubbleX + bubbleWidth} ${bubbleY} ${bubbleX + bubbleWidth} ${bubbleY + 12}`,
+                `V ${bubbleY + bubbleHeight - 14}`,
+                `Q ${bubbleX + bubbleWidth} ${bubbleY + bubbleHeight} ${bubbleX + bubbleWidth - 14} ${bubbleY + bubbleHeight}`,
+                `H ${bubbleX + 24}`,
+                `L ${bubbleX + 8} ${bubbleY + bubbleHeight + 5}`,
+                `L ${bubbleX + 12} ${bubbleY + bubbleHeight - 4}`,
+                `Q ${bubbleX} ${bubbleY + bubbleHeight - 8} ${bubbleX} ${bubbleY + bubbleHeight - 18}`,
+                `V ${bubbleY + 12}`,
+                `Q ${bubbleX} ${bubbleY} ${bubbleX + 12} ${bubbleY}`,
+                'Z'
+            ].join(' '),
+            fill: '#b2a5d2',
+            stroke: '#d9c4f3',
+            'stroke-width': 1.4
+        }, bubble);
+
+        const label = `☁ ${numberOfNotes}`;
+        drawSvgText(
+            bubble, bubbleX + 9, bubbleY + Math.max(17, bubbleHeight * 0.65),
+            label, 14, '#403c68', 650
+        );
     }
 
     window.TimelineShadows = { refresh, drawShadow };
     window.addEventListener('load', () => {
-        refresh().catch(error => console.warn('Zeitpapier-Schatten:', error));
+        refresh().catch(error => console.warn('Papiermarkierung:', error));
     });
 })();

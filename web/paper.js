@@ -169,7 +169,8 @@
 
             PaperRelations.refreshGroupOutlines();
             PaperRelations.drawConnections();
-            showStatus('Tagebuch geladen');
+            await window.FreePaperGraph?.openDay(selectedDay, paperCanvas);
+            showStatus('Endlospapier geladen');
         } catch (error) {
             showStatus('Server nicht erreichbar · bitte python main.py starten');
         }
@@ -284,6 +285,7 @@
         PaperRelations.refreshGroupOutlines();
         PaperRelations.drawConnections();
 
+        window.FreePaperGraph?.decorateExistingItem(itemElement, item);
         attachItemDragging(header, item, itemElement, deleteButton);
         observeItemSize(item, itemElement);
         return itemElement;
@@ -307,6 +309,7 @@
         paperItems = paperItems.filter(entry => entry.id !== item.id);
         itemElement.remove();
         PaperRelations.removeItem(item.id);
+        window.FreePaperGraph?.refreshConnections();
     }
 
     /** Zeigt je nach Typ einen Editor, ein Bild, Audio, Video oder einen Link. */
@@ -473,6 +476,7 @@
                 movingElement.style.top = `${movingItem.y}px`;
             }
             PaperRelations.drawConnections();
+            window.FreePaperGraph?.refreshConnections();
         });
 
         header.addEventListener('pointerup', () => {
@@ -489,6 +493,7 @@
                     }
                 }
                 PaperRelations.drawConnections();
+                window.FreePaperGraph?.refreshConnections();
             }
         });
     }
@@ -507,6 +512,7 @@
                 item.height = height;
                 scheduleItemSave(item);
                 PaperRelations.drawConnections();
+                window.FreePaperGraph?.refreshConnections();
             }
         });
 
@@ -823,15 +829,20 @@
 
     // Dies ist der einzige öffentliche Einstiegspunkt für den Kalender.
     window.Paper = {
+        refreshFreePaper() {
+            openPaperDate(selectedDay);
+        },
         activate(shouldOpen, dateString) {
             paperVisible = shouldOpen;
             paperOverlay.classList.toggle('active', shouldOpen);
             document.body.classList.toggle('paper-mode', shouldOpen);
 
-            if (shouldOpen && dateString !== selectedDay) {
+            if (shouldOpen) {
                 openPaperDate(dateString);
             }
 
+            // Das Zeitpapier ist die Stundenansicht; der freie Graph bleibt
+            // über die Schaltfläche 'Freies Endlospapier' erreichbar.
             // Die letzte Zoomstufe öffnet das zeitlich fortlaufende Papier.
             // Die frühere freie Ablage bleibt per Schaltfläche erreichbar.
             if (shouldOpen) {

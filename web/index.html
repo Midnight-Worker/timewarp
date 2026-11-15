@@ -130,27 +130,51 @@
                 <button id="paperAddLink">↗ Link</button>
                 <button id="paperAddFiles">＋ Fotos / Dateien</button>
                 <button id="paperFloatImg">▧ Bild in Text</button>
-                <button id="paperConnect">⤳ Verbinden</button>
+                <button id="paperConnect" type="button" title="Verbindungspunkt an Karte ziehen">⤳ Linien: Anschluss ziehen</button>
+                <select id="freePaperRelationType" aria-label="Beziehungsart">
+                    <option value="relation">Beziehung</option>
+                    <option value="dependency">Abhängigkeit →</option>
+                </select>
+                <button id="freePaperManageLinks" type="button">Linien entfernen</button>
                 <button id="paperGroup">▣ Gruppieren</button>
                 <button id="paperUngroup">Gruppe lösen</button>
                 <input id="paperFiles" type="file" multiple hidden>
                 <span id="paperMsg">Tagebuch</span>
             </nav>
-            <div id="paperHint">Leere Fläche ziehen: bewegen · Mausrad: zoomen · Objekttitel ziehen: bewegen · Ecke ziehen: Größe ändern</div>
+            <div id="paperHint">Linien nur hier: Verbindungspunkt ● zu einer Karte ziehen · Leere Fläche ziehen: bewegen · Mausrad: zoomen · Objekttitel ziehen: bewegen · Ecke ziehen: Größe ändern</div>
             <div id="paperDrop">Hier ablegen: Bilder · Audio · Videos · Dokumente</div>
         </section>
         <!-- Neues fortlaufendes Tagebuch: 1 Stunde = mindestens eine Seite. -->
         <section id="timelineOverlay" aria-label="Endloses Zeitpapier">
             <nav id="timelineToolbar">
                 <button id="timelineBack" type="button">← Kalender</button>
-                <button id="timelineFreePaper" type="button">Freie Papierablage</button>
+                <button id="timelineFreePaper" type="button" title="Bisherige V16-Papieransicht">Freies Endlospapier</button>
+                <label>Linie:
+                    <select id="timelineRelationType">
+                        <option value="beziehung">Beziehung</option>
+                        <option value="abhaengigkeit">Abhängigkeit →</option>
+                    </select>
+                </label>
+                <button id="timelineManageLinks" type="button">Verbindungen verwalten</button>
                 <label>Datum <input id="timelineDate" type="date"></label>
                 <button id="timelineAddFile" type="button">＋ Datei / Foto / Audio</button>
                 <input id="timelineFiles" type="file" multiple hidden>
                 <span id="timelineStatus" aria-live="polite">Zeitpapier</span>
             </nav>
             <div id="timelineScroller" tabindex="0"></div>
+            <svg id="timelineLinkOverlay" aria-hidden="true"></svg>
         </section>
+        <aside id="paperAppointmentInbox" class="paper-appointment-inbox">
+            <button id="togglePaperInbox" type="button" aria-expanded="false">
+                ◧ Papiernotizen einplanen
+            </button>
+            <section id="paperInboxContent" hidden>
+                <p>Ungeplante Notizen aus dem Zeitpapier. Ziehe einen Eintrag
+                   auf einen Tag oder eine Uhrzeit im Kalender.</p>
+                <div id="paperInboxItems"></div>
+                <p id="paperInboxStatus" role="status"></p>
+            </section>
+        </aside>
         <div id="bottom">
             <div class="bubble"><button id="undoCalendar" title="Rückgängig (Strg+Z)">↶</button> <button id="redoCalendar" title="Wiederholen (Strg+Y)">↷</button></div>
             <div class="bubble" id="calendarSaveStatus">Kalender wird geladen …</div>
@@ -210,6 +234,9 @@
         <script src="paper-network.js"></script>
         <script src="paper-relations.js"></script>
         <script src="paper.js"></script>
+        <script src="free-paper-graph.js"></script>
         <script src="timeline.js"></script>
+        <script src="timeline-board.js"></script>
+        <script src="16-paper-calendar-integration.js"></script>
     </body>
 </html>

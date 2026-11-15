@@ -165,7 +165,9 @@ const PaperRelations = (() => {
         drawConnections();
     }
 
-    document.querySelector('#paperConnect').addEventListener('click', connectSelected);
+    // V19: Verbindungen liegen jetzt zentral im Graphen.
+    // Der alte lokale Verbindungs-Button wird nicht mehr registriert.
+
     document.querySelector('#paperGroup').addEventListener('click', groupSelected);
     document.querySelector('#paperUngroup').addEventListener('click', ungroupSelected);
 

@@ -261,3 +261,57 @@ body.paper-mode #paperToolbar {
 .paper-item.paper-grouped {
     border: 2px dashed #118c85;
 }
+
+
+/* V19 – ein gemeinsames, frei verschiebbares Node-Papier. */
+.free-graph-card {
+    border: 2px solid #6a9ba7;
+    background: #f7fcff;
+    width: 315px;
+    height: 170px;
+    resize: both;
+    overflow: auto;
+}
+.free-graph-card.graph-appointment {
+    border-color: #c39149;
+    background: #fff8e7;
+}
+.free-graph-card header {
+    background: #d8e8f0;
+}
+.free-graph-card.graph-appointment header {
+    background: #f1dfb8;
+}
+.free-graph-card .paper-body {
+    padding: 10px;
+    overflow: auto;
+}
+.free-graph-card .paper-body img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.graph-socket {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #0b8c98;
+    cursor: crosshair;
+    box-shadow: 0 0 0 2px #3c8497;
+    touch-action: none;
+}
+.graph-socket:hover { background: #f59e0b; }
+.graph-lines {
+    position: absolute;
+    inset: 0;
+    width: 1px;
+    height: 1px;
+    overflow: visible;
+    pointer-events: none;
+}
+.graph-lines path { fill: none; stroke-width: 3; }
+.graph-lines path.dependency { stroke: #c17b40; stroke-dasharray: 7 4; }
+.graph-lines path.relation { stroke: #168eae; }
+.graph-lines path.clickable-line { pointer-events: stroke; cursor: pointer; }

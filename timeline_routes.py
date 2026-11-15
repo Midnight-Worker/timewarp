@@ -7,7 +7,11 @@ Operationen liegen ausschließlich in timeline_database.py.
 from datetime import date
 from urllib.parse import parse_qs, urlparse
 
-from timeline_database import delete_entry, get_day_counts, get_entries, save_entry
+from calendar_paper_bridge import get_combined_paper_entries
+from timeline_database import (
+    create_link, delete_entry, delete_link, get_day_counts,
+    get_entries, get_links, save_entry,
+)
 
 
 def validate_day(text):
@@ -32,7 +36,7 @@ def handle_timeline_get(handler, request_url):
     if request_url.path == "/api/timeline/counts":
         result = get_day_counts(first_day, last_day)
     else:
-        result = get_entries(first_day, last_day)
+        result = get_combined_paper_entries(first_day, last_day)
     handler.send_http_response(200, result)
 
 
@@ -51,4 +55,30 @@ def handle_timeline_delete(handler, requested_path):
         handler.send_http_response(400, {"error": "Ungültige Kennung"})
         return
     delete_entry(entry_id)
+    handler.send_http_response(200, {"ok": True})
+
+
+def handle_links_get(handler):
+    handler.send_http_response(200, get_links())
+
+
+def handle_links_post(handler):
+    try:
+        payload = handler.read_json_request()
+        identifier = create_link(
+            str(payload["source_id"]),
+            str(payload["target_id"]),
+            str(payload["relation_type"]),
+        )
+        handler.send_http_response(201, {"id": identifier})
+    except (ValueError, KeyError, TypeError) as error:
+        handler.send_http_response(400, {"error": str(error)})
+
+
+def handle_links_delete(handler, requested_path):
+    identifier = requested_path.removeprefix("/api/timeline-links/")
+    if not identifier or len(identifier) > 64 or "/" in identifier:
+        handler.send_http_response(400, {"error": "Ungültige Verbindung"})
+        return
+    delete_link(identifier)
     handler.send_http_response(200, {"ok": True})

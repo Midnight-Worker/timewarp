@@ -440,3 +440,43 @@ button: hover,button.active {
     stroke-width: 5;
     filter: drop-shadow(0 0 7px #e9d88f);
 }
+
+/* V18: Ausklappbarer Papier-Vorrat für das kalenderweite Einplanen. */
+.paper-appointment-inbox {
+    position: fixed;
+    top: 95px;
+    right: 18px;
+    width: min(340px, 33vw);
+    z-index: 19;
+    color: #e5f4f7;
+    background: #132b3deb;
+    border: 1px solid #5d8698;
+    border-radius: 12px;
+    box-shadow: 0 9px 30px #0007;
+}
+.paper-appointment-inbox > button {
+    width: 100%;
+    cursor: pointer;
+    padding: 12px;
+    border: 0;
+    border-radius: 12px;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+}
+#paperInboxContent { padding: 10px 12px; max-height: 60vh; overflow: auto; }
+#paperInboxContent[hidden] { display: none; }
+#paperInboxContent p { font-size: 12px; color: #aac9da; }
+.paper-inbox-entry {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #446176;
+    cursor: grab;
+    overflow-wrap: anywhere;
+}
+.paper-inbox-entry > span { font-size: 13px; }
+.paper-inbox-entry > button { cursor: pointer; padding: 5px; }

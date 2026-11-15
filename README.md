@@ -1,3 +1,7 @@
+**Neu in V19:** Bitte zuerst `WAS-IST-NEU-V19.md` lesen.
+
+Abhängigkeiten unter Windows: `python -m pip install pywebview tzdata`.
+
 # Midnight Organizer V12 – Zeitspuren
 
 Eine spielerische Kalenderwelt mit lesbarem Python/JavaScript/SVG-Code.
@@ -97,3 +101,19 @@ benötigen wir UTC-Zeitstempel plus zugehörige IANA-Zeitzone.
 
 **Noch kein freies Skalieren im Zeitpapier.** Die bisherige freie
 Papierablage unterstützt weiterhin Karten mit Größenänderung.
+
+
+## V17: Zeitpapier mit freien Positionen und Beziehungen
+
+Siehe `WAS-IST-NEU-V17.md`. Bestehende SQLite-Datenbanken werden beim Start um
+Positionsfelder und eine Tabelle für Beziehungsbahnen ergänzt. Vor dem ersten
+Start bitte den bisherigen `daten/`-Ordner sichern.
+
+
+## V18 – Kalender und Zeitpapier
+
+Kalendertermine werden auf dem fortlaufenden Zeitpapier als dieselben Entitäten
+dargestellt. Im Kalender gibt es rechts den ausklappbaren Vorrat
+**Papiernotizen einplanen**. Ziehe eine Notiz auf einen Tag oder eine Uhrzeit.
+
+Details: `WAS-IST-NEU-V18.md`.
