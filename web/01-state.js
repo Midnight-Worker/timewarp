@@ -50,9 +50,60 @@ let zoomMagnification = 1;
 let dragSession = null;
 let ignoreNextClick = false;
 let editedAppointment = null;
+let selectedAppointmentId = null;
+let weekDrawingSession = null;
 
 // Gemeinsame Kalenderdaten der lokalen Demonstration
 let visibleTeamMemberIds = new Set(teamMembers.map(member => member.id));
+
+// Diese Reihenfolge gilt für den räumlichen Tagesstapel.
+let teamMemberOrder = teamMembers.map(member => member.id);
+let dayStackMode = false;
+
+function dayLaneGeometry(columnIndex) {
+    if (dayStackMode) {
+        return {
+            left: 75 + columnIndex * 55,
+            top: 196 + columnIndex * 34
+        };
+    }
+    return {
+        left: 75 + columnIndex * 389,
+        top: 196 + columnIndex * 25
+    };
+}
+
+
+function orderedVisibleTeamMembers() {
+    return teamMemberOrder
+        .map(memberId => teamMembers.find(member => member.id === memberId))
+        .filter(member => member && visibleTeamMemberIds.has(member.id));
+}
+
+function moveTeamMember(memberId, beforeMemberId) {
+    const originalIndex = teamMemberOrder.indexOf(memberId);
+    if (originalIndex < 0 || memberId === beforeMemberId) {
+        return;
+    }
+    teamMemberOrder.splice(originalIndex, 1);
+    const targetIndex = beforeMemberId
+        ? teamMemberOrder.indexOf(beforeMemberId)
+        : teamMemberOrder.length;
+    teamMemberOrder.splice(targetIndex, 0, memberId);
+    localStorage.setItem('midnight.teamOrder.v12', JSON.stringify(teamMemberOrder));
+    renderCurrentScene();
+}
+
+try {
+    const savedOrder = JSON.parse(localStorage.getItem('midnight.teamOrder.v12'));
+    if (Array.isArray(savedOrder) &&
+        savedOrder.length === teamMembers.length &&
+        teamMembers.every(member => savedOrder.includes(member.id))) {
+        teamMemberOrder = savedOrder;
+    }
+} catch (error) {
+    console.warn('Die Reihenfolge der Personen konnte nicht geladen werden:', error);
+}
 let appointments = [];
 let unplannedNotes = [];
 

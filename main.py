@@ -13,6 +13,7 @@ from threading import Thread
 from configuration import DATA_DIRECTORY, SERVER_HOST, SERVER_PORT
 from http_routes import OrganizerRequestHandler
 from paper_database import prepare_storage
+from calendar_database import create_calendar_tables
 
 
 def open_application_window(application_url):
@@ -46,6 +47,7 @@ def wait_until_keyboard_interrupt():
 def start_application():
     """Richtet die Speicherung ein und startet die Anwendung."""
     prepare_storage()
+    create_calendar_tables()
 
     server_address = (SERVER_HOST, SERVER_PORT)
     http_server = ThreadingHTTPServer(

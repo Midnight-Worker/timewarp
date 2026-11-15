@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>Midnight Organizer · Zeitwelt V10 · Unterrichtscode</title>
-        <link rel="stylesheet" href="/app.css">
-        <link rel="stylesheet" href="/paper.css">
+        <title>Midnight Organizer · Zeitwelt V13 · Karten und Listen</title>
+        <link rel="stylesheet" href="app.css">
+        <link rel="stylesheet" href="paper.css">
     </head>
     <body>
         <svg id="space" xmlns="http://www.w3.org/2000/svg" aria-label="Zoombarer Kalender">
@@ -71,21 +71,24 @@
             </div>
         </div>
         <div id="tray">
-            <button id="openNotes">✎ Notizblock (<span id="noteCount">0</span>)</button>
-            <small>Notizen auf einen Kalendertag ziehen</small>
+            <button id="openNotes">✎ Listen (<span id="noteCount">0</span>)</button>
+            <button id="toggleTaskTray" type="button">▾ Aufgaben ausklappen</button>
+            <div id="taskTrayList" hidden></div>
+            <small>Aufgabe greifen und in den Kalender ziehen</small>
         </div>
-        <section id="notepad">
-            <button id="closeNotes" style="float:right">✕</button>
-            <h2>✎ Gedankensammlung</h2>
-            <p class="hint">Gedanken aufschreiben · Enter übernimmt · Notiz auf Kalender ziehen</p>
-            <textarea id="noteInput" placeholder="Was geht dir durch den Kopf?">
-            </textarea>
-            <div style="display:flex;gap:7px;margin-top:8px">
-                <button id="addNote">+ Notiz hinzufügen</button>
-                <button id="noteCalendar">Zum Kalender</button>
+        <section id="notepad" aria-label="Aufgaben- und Ideenliste">
+            <header class="notepad-header">
+                <h2>✎ Mein Notizblock</h2>
+                <button id="closeNotes" type="button">✕</button>
+            </header>
+            <p class="hint">Enter: neue Zeile · Klick: bearbeiten · Ziehen: sortieren</p>
+            <ul id="noteList"></ul>
+            <input id="noteInput" type="text"
+                   placeholder="Neuen Punkt eingeben und Enter drücken">
+            <div class="notepad-actions">
+                <button id="addNote" type="button">+ Hinzufügen</button>
+                <button id="noteCalendar" type="button">Zum Kalender</button>
             </div>
-            <ul id="noteList">
-            </ul>
         </section>
         <section id="websiteEditor" class="website-editor" hidden aria-label="Website-Redaktion">
             <div class="website-editor-panel">
@@ -135,29 +138,62 @@
             <div id="paperDrop">Hier ablegen: Bilder · Audio · Videos · Dokumente</div>
         </section>
         <div id="bottom">
-            <div class="bubble" id="status">Mausrad: fein zoomen · Fläche ziehen: bewegen · Doppelklick: öffnen</div>
+            <div class="bubble"><button id="undoCalendar" title="Rückgängig (Strg+Z)">↶</button> <button id="redoCalendar" title="Wiederholen (Strg+Y)">↷</button></div>
+            <div class="bubble" id="calendarSaveStatus">Kalender wird geladen …</div>
+            <div class="bubble" id="status">Mausrad: fein zoomen · Fläche ziehen: bewegen · Karte: Klick auswählen · E bearbeiten · Entf/X löschen · Doppelklick bearbeiten</div>
             <div class="bubble">← → Wochenauswahl · Enter: öffnen · Esc: herauszoomen · Bild ↑↓: blättern</div>
         </div>
-        <input id="editor" aria-label="Kartentitel bearbeiten" maxlength="140"/>
-        <script src="/01-state.js"></script>
-        <script src="/02-time.js"></script>
-        <script src="/03-storage.js"></script>
-        <script src="/04-svg-utils.js"></script>
-        <script src="/05a-desktop.js"></script>
-        <script src="/05b-globe.js"></script>
+        <div id="calendarConflict" hidden role="dialog" aria-label="Konflikt bei Kalenderspeicherung">
+            <strong>Die Termine wurden auf einem anderen Rechner geändert.</strong>
+            <p>Welchen Stand möchtest du behalten?</p>
+            <button id="useServer">Serverstand laden</button>
+            <button id="keepLocal">Meine Änderungen überschreiben den Server</button>
+        </div>
+        <input id="editor" aria-label="Kartentitel bearbeiten" maxlength="140" hidden>
+        <section id="appointmentDialog" class="appointment-dialog" hidden
+                 aria-label="Termin bearbeiten">
+            <div class="appointment-panel">
+                <header>
+                    <h2>Termin bearbeiten</h2>
+                    <button id="appointmentClose" type="button">✕</button>
+                </header>
+                <label>Titel <input id="appointmentTitle" type="text" maxlength="140"></label>
+                <label>Beginn <input id="appointmentStart" type="datetime-local"></label>
+                <label>Ende <input id="appointmentEnd" type="datetime-local"></label>
+                <label>Kalender <select id="appointmentOwner"></select></label>
+                <p class="editor-hint">Änderungen werden beim Verlassen eines Feldes gespeichert. Die Uhrzeiten beziehen sich auf die Zeitzone des ausgewählten Kalenders.</p>
+                <div class="appointment-actions">
+                    <button id="appointmentDelete" type="button">Termin löschen</button>
+                    <button id="appointmentDone" type="button">Fertig</button>
+                </div>
+                <p id="appointmentEditorStatus" aria-live="polite"></p>
+            </div>
+        </section>
+        <script src="01-state.js"></script>
+        <script src="02-time.js"></script>
+        <script src="03-storage.js"></script>
+        <script src="04-svg-utils.js"></script>
+        <script src="05a-desktop.js"></script>
+        <script src="05b-globe.js"></script>
         <!-- Die großen Kalenderansichten sind bewusst getrennt. -->
-        <script src="/05c-year.js"></script>
-        <script src="/05d-month.js"></script>
-        <script src="/05e-week.js"></script>
-        <script src="/05f-day.js"></script>
-        <script src="/06-camera.js"></script>
-        <script src="/07-input.js"></script>
-        <script src="/09-minute-planning.js"></script>
-        <script src="/website-editor.js"></script>
-        <script src="/08-start.js"></script>
+        <script src="05c-year.js"></script>
+        <script src="05d-month.js"></script>
+        <script src="05e-week.js"></script>
+        <script src="05f-day.js"></script>
+        <script src="06-camera.js"></script>
+        <script src="10-calendar-sync.js"></script>
+        <script src="11-day-interaction.js"></script>
+        <script src="12-appointment-editor.js"></script>
+        <script src="14-appointment-selection.js"></script>
+        <script src="15-time-drawing.js"></script>
+        <script src="07-input.js"></script>
+        <script src="09-minute-planning.js"></script>
+        <script src="13-notepad.js"></script>
+        <script src="website-editor.js"></script>
+        <script src="08-start.js"></script>
         <!-- Zuerst die gut lesbare API-Hilfe, dann der Tagebucheditor. -->
-        <script src="/paper-network.js"></script>
-        <script src="/paper-relations.js"></script>
-        <script src="/paper.js"></script>
+        <script src="paper-network.js"></script>
+        <script src="paper-relations.js"></script>
+        <script src="paper.js"></script>
     </body>
 </html>

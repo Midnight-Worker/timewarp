@@ -16,20 +16,18 @@ function getMinutePlanningTarget(pointerEvent) {
     }
 
     const point = screenToWorld(pointerEvent);
-    const visibleMembers = teamMembers.filter(member =>
-        visibleTeamMemberIds.has(member.id)
-    );
+    const visibleMembers = orderedVisibleTeamMembers();
 
     // Die Spaltenbreite entspricht der Berechnung in 05f-day.js.
-    const columnIndex = Math.floor((point.x - 75) / 389);
-    const member = visibleMembers[columnIndex];
+    const columnIndex = getDayColumnIndex(point);
+    const member = columnIndex === null ? null : visibleMembers[columnIndex];
 
     if (!member) {
         return null;
     }
 
-    const columnTop = 196 + columnIndex * 25;
-    const firstHourY = columnTop + 100;
+    const columnPosition = dayLaneGeometry(columnIndex);
+    const firstHourY = columnPosition.top + 100;
     const minuteOffset = Math.round(
         (point.y - firstHourY) * MINUTES_IN_HOUR / DAY_VIEW_HOUR_HEIGHT
     );

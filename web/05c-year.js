@@ -108,6 +108,8 @@ function drawYearMonthRow(yearSheet, year, monthIndex) {
     for (let day = 1; day <= lastDay; day++) {
         drawYearDayCell(yearSheet, new Date(year, monthIndex, day), monthY);
     }
+
+    drawYearRangeBars(yearSheet, year, monthIndex, monthY);
 }
 
 function drawYearDayCell(yearSheet, date, monthY) {
@@ -143,33 +145,58 @@ function drawYearDayCell(yearSheet, date, monthY) {
         { 'text-anchor': 'end' }
     );
 
-    drawYearAppointmentIndicators(dayGroup, dateKey, dayColumnLeft, monthY);
+    // Durchgehende Zeiträume werden nach der Tagesreihe gezeichnet.
 }
 
-/** Jede Person erhält im Jahreskalender einen eigenen farbigen Zeitbalken. */
-function drawYearAppointmentIndicators(dayGroup, dateKey, dayColumnLeft, monthY) {
-    const appointmentsForDay = appointmentsForDate(dateKey);
-    const appointmentsPerOwner = {};
+/**
+ * Zeichnet von–bis-Balken über mehrere Tage desselben Monats.
+ * Über Monats- und Jahresgrenzen wird der Balken am Rand fortgesetzt.
+ * Eigene Termine stehen in der obersten farbigen Zeile.
+ */
+function drawYearRangeBars(yearSheet, year, monthIndex, monthY) {
+    const firstDay = new Date(year, monthIndex, 1);
+    const firstNextMonth = new Date(year, monthIndex + 1, 1);
+    const monthStartKey = formatLocalDate(firstDay);
+    const nextMonthKey = formatLocalDate(firstNextMonth);
+    const numberOfDays = daysInMonth(year, monthIndex);
 
-    for (const appointment of appointmentsForDay) {
-        const ownerId = appointment.owner;
-        appointmentsPerOwner[ownerId] =
-            (appointmentsPerOwner[ownerId] || 0) + 1;
-    }
-
-    teamMembers.forEach((member, memberIndex) => {
-        const numberOfAppointments = appointmentsPerOwner[member.id] || 0;
-        if (numberOfAppointments === 0) {
-            return;
-        }
-
-        const barY = monthY + 61 + memberIndex * 17;
-        const barWidth = Math.min(
-            DAY_COLUMN_WIDTH - 18,
-            20 + numberOfAppointments * 28
+    for (const appointment of appointments) {
+        const start = appointmentUtcDate(appointment);
+        const end = new Date(start.getTime() + appointment.duration * 60000);
+        const firstOccupiedDay = dateStringInTimeZone(start, homeTimeZone);
+        const lastOccupiedDay = dateStringInTimeZone(
+            new Date(end.getTime() - 1), homeTimeZone
         );
 
-        drawSvgRectangle(dayGroup, dayColumnLeft + 8, barY, barWidth, 10, member.color);
-    });
-}
+        if (lastOccupiedDay < monthStartKey || firstOccupiedDay >= nextMonthKey) {
+            continue;
+        }
 
+        const firstVisibleDay = firstOccupiedDay < monthStartKey
+            ? 1
+            : Number(firstOccupiedDay.slice(8));
+        const lastVisibleDay = lastOccupiedDay >= nextMonthKey
+            ? numberOfDays
+            : Number(lastOccupiedDay.slice(8));
+        const memberIndex = teamMemberOrder.indexOf(appointment.owner);
+        const member = findTeamMember(appointment.owner);
+        const left = CALENDAR_LEFT + (firstVisibleDay - 1) * DAY_COLUMN_WIDTH + 7;
+        const width = (lastVisibleDay - firstVisibleDay + 1) * DAY_COLUMN_WIDTH - 13;
+        const top = monthY + 64 + memberIndex * 16;
+
+        const rangeGroup = createSvgElement('g', {
+            'data-card': appointment.id,
+            style: 'cursor:grab'
+        }, yearSheet);
+        drawSvgRectangle(rangeGroup, left, top, width, 12, member.color);
+
+        if (width > 150) {
+            drawSvgText(
+                rangeGroup, left + 9, top - 3,
+                appointment.title.slice(0, 28),
+                13, member.color, 600,
+                { 'pointer-events': 'none' }
+            );
+        }
+    }
+}

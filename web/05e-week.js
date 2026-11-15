@@ -20,13 +20,14 @@ function renderWeekView() {
     );
     drawSvgText(
         weekSheet, 69, 145,
-        'Alle Kalender · Karten direkt bearbeiten', 23, '#b0d3dd'
+        'Leere Fläche ziehen: Zeitraum · Karte anklicken: auswählen · E / Entf', 23, '#b0d3dd'
     );
 
     for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
         const date = addDays(monday, dayIndex);
         drawWeekDayColumn(weekSheet, date, dayIndex);
     }
+    drawWeekRangeBars(weekSheet, monday);
 }
 
 function drawWeekDayColumn(weekSheet, date, dayIndex) {
@@ -51,6 +52,7 @@ function drawWeekDayColumn(weekSheet, date, dayIndex) {
 
     const visibleAppointments = appointmentsForDate(dateKey)
         .filter(appointment => visibleTeamMemberIds.has(appointment.owner))
+        .filter(appointment => appointment.duration < 24 * 60)
         .slice(0, 14);
 
     visibleAppointments.forEach((appointment, index) => {
@@ -59,3 +61,57 @@ function drawWeekDayColumn(weekSheet, date, dayIndex) {
     });
 }
 
+
+/**
+ * Mehrtägige Zeitbalken stehen im oberen Bereich der Wochenansicht.
+ * Sie zeigen auch Termine, die vor der Woche begonnen haben oder danach enden.
+ */
+function drawWeekRangeBars(parent, monday) {
+    const weekStart = formatLocalDate(monday);
+    const weekEnd = formatLocalDate(addDays(monday, 6));
+    let visibleBarIndex = 0;
+
+    for (const appointment of appointments) {
+        if (!visibleTeamMemberIds.has(appointment.owner)) {
+            continue;
+        }
+
+        const start = appointmentUtcDate(appointment);
+        const end = new Date(start.getTime() + appointment.duration * 60000);
+        const startKey = dateStringInTimeZone(start, homeTimeZone);
+        const endKey = dateStringInTimeZone(new Date(end.getTime() - 1), homeTimeZone);
+
+        if (endKey <= startKey || endKey < weekStart || startKey > weekEnd) {
+            continue;
+        }
+
+        const visibleStart = startKey < weekStart ? weekStart : startKey;
+        const visibleEnd = endKey > weekEnd ? weekEnd : endKey;
+        const firstDay = Math.round((new Date(visibleStart + 'T12:00:00') -
+            new Date(weekStart + 'T12:00:00')) / 86400000);
+        const lastDay = Math.round((new Date(visibleEnd + 'T12:00:00') -
+            new Date(weekStart + 'T12:00:00')) / 86400000);
+
+        const barLeft = 65 + firstDay * 313 + 8;
+        const barWidth = (lastDay - firstDay + 1) * 313 - 16;
+        const barTop = 310 + (visibleBarIndex % 9) * 63;
+        const member = findTeamMember(appointment.owner);
+        const group = createSvgElement('g', {
+            'data-card': appointment.id,
+            style: 'cursor:pointer'
+        }, parent);
+
+        drawSvgRectangle(group, barLeft, barTop, barWidth, 49, member.color,
+            member.color, {'fill-opacity': 0.28, 'stroke-width': 2});
+
+        const leftContinuation = startKey < weekStart ? '◀ ' : '';
+        const rightContinuation = endKey > weekEnd ? ' ▶' : '';
+        const availableCharacters = Math.max(5, Math.floor(barWidth / 13));
+        const title = `${leftContinuation}${appointment.title}${rightContinuation}`;
+
+        drawSvgText(group, barLeft + 12, barTop + 31,
+            title.slice(0, availableCharacters), 18, '#ffffff', 700);
+
+        visibleBarIndex += 1;
+    }
+}

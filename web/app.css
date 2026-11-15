@@ -349,3 +349,94 @@ button: hover,button.active {
     border-radius: 8px;
     overflow-wrap: anywhere;
 }
+
+/* V12: Konflikt nicht verstecken; Nutzer entscheidet selbst. */
+#calendarConflict[hidden] { display: none; }
+#calendarConflict { position: fixed; z-index: 200; left: 50%; top: 38%; transform: translate(-50%, -50%); max-width: 420px; padding: 25px; border: 2px solid #ffc178; border-radius: 14px; background: #122539; box-shadow: 0 18px 90px #000c; }
+#calendarConflict button { margin: 5px 4px; }
+#calendarSaveStatus { font-size: 12px; }
+#people .person { cursor: grab; }
+#people .person.dragging { opacity: .5; }
+
+/* V13 – aufgeräumte Notizliste und Termindialog */
+[hidden] { display: none !important; }
+.notepad-header, .appointment-panel header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.notepad-actions { display: flex; gap: 8px; margin-top: 10px; }
+#noteInput { min-height: 38px; }
+#noteList li.task-row { align-items: center; padding: 5px 2px; }
+#noteList input[type="checkbox"] { width: 17px; height: 17px; }
+#noteList .task-text-input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 5px;
+    color: #253747;
+    font: 14px system-ui;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+#noteList .task-text-input:focus {
+    background: #fffbed;
+    border-color: #bda66c;
+    outline: none;
+}
+#noteList .task-text-input.completed {
+    color: #78837b;
+    text-decoration: line-through;
+}
+.task-drag-handle { cursor: grab; user-select: none; flex: none !important; }
+#taskTrayList { max-height: 35vh; overflow: auto; margin-top: 8px; }
+.tray-task { display: flex; align-items: center; gap: 9px; margin: 7px 0; }
+.tray-task > span:nth-child(2) {
+    flex: 1;
+    cursor: grab;
+    overflow-wrap: anywhere;
+    color: #e5f5fa;
+}
+.tray-task button { padding: 5px 7px; }
+.appointment-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    display: grid;
+    place-items: center;
+    background: #061421c7;
+}
+.appointment-panel {
+    width: min(450px, 94vw);
+    max-height: 90vh;
+    overflow: auto;
+    background: #132b3b;
+    color: #e9faff;
+    border: 1px solid #6bb9ad;
+    border-radius: 14px;
+    box-shadow: 0 25px 90px #000c;
+    padding: 22px;
+}
+.appointment-panel h2 { margin: 0; }
+.appointment-panel label { display: grid; gap: 5px; margin: 13px 0; }
+.appointment-panel input, .appointment-panel select {
+    width: 100%;
+    padding: 9px;
+    border-radius: 7px;
+    border: 1px solid #658596;
+    background: #f3fafc;
+    color: #162836;
+    font: 15px system-ui;
+}
+.appointment-actions { display: flex; justify-content: space-between; margin-top: 12px; }
+#appointmentDelete { background: #723b49; }
+.editor-hint { font-size: 12px; color: #bbd5de; line-height: 1.5; }
+#appointmentEditorStatus { min-height: 20px; color: #a9ead7; font-size: 12px; }
+
+/* Auswahl ist sichtbar, ohne den Drag-and-drop-Griff zu verdecken. */
+.selected-appointment > rect:first-child {
+    stroke: #fff5aa;
+    stroke-width: 5;
+    filter: drop-shadow(0 0 7px #e9d88f);
+}

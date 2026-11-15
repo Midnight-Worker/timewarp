@@ -1,139 +1,68 @@
-> **V10:** Siehe `WAS-IST-NEU-V10.md` für die weitere Vereinfachung von `main.py` und die neue Datei `web/paper-network.js`.
+# Midnight Organizer V12 – Zeitspuren
 
-# Midnight Organizer V9 – Unterrichtsfassung
+Eine spielerische Kalenderwelt mit lesbarem Python/JavaScript/SVG-Code.
 
-Diese Version ist eine **Code-Überarbeitung** des bestehenden Midnight Organizers,
-keine neue Produktversion mit zusätzlichen Features. Das Ziel ist nicht der kürzeste,
-sondern der **verständlichste Quellcode**: saubere Einrückung, aussagekräftige Namen,
-kleine Funktionen und nachvollziehbare Kommentare.
-
-## 1. Starten
-
-Mit Python 3:
-
-```bash
-python main.py
-```
-
-Für ein eigenes Desktopfenster kann zusätzlich pywebview installiert werden:
+## Installation und Start
 
 ```bash
 pip install pywebview
 python main.py
 ```
 
-Ohne pywebview öffnet sich die Anwendung im Browser unter
-`http://127.0.0.1:8877`. Bitte nicht die `index.html` direkt öffnen:
-Die Tagebuchdaten und Medien werden über die lokalen Python-HTTP-Routen geladen.
+Ohne pywebview wird die App im Standardbrowser geöffnet. Lokale Adresse: `http://127.0.0.1:8877`.
 
-## 2. Was steht wo?
+## Tagesansicht ausprobieren
 
-| Datei | Aufgabe |
-|---|---|
-| `main.py` | Übersichtlicher Programmstart und Desktopfenster |
-| `configuration.py` | Port, Pfade, Dateigrößen und öffentliche Web-Dateien |
-| `paper_database.py` | Tabellen, Speicherordner und SQLite-Verbindung |
-| `http_routes.py` | HTTP-Anfragen, Uploads, Medien und Tagebuch-API |
-| `web/index.html` | Grundgerüst der Benutzeroberfläche und SVG-Bühne |
-| `web/app.css` | Gestaltung des Schreibtischs, Globus und Kalenders |
-| `web/paper.css` | Gestaltung des multimedialen Tagebuchpapiers |
-| `web/01-state.js` | Teammitglieder, Datum, Zoomstufe, Kamerazustand |
-| `web/02-time.js` | Zeitzonenumrechnung |
-| `web/03-storage.js` | Termine und Schreibtischnotizen im `localStorage` |
-| `web/04-svg-utils.js` | Wiederverwendbare SVG-Zeichenfunktionen |
-| `web/05a-desktop.js` | Schreibtisch, Notizblock, Stift, Zeitung |
-| `web/05b-globe.js` | Erde, Jahreszeitenfarbe, umlaufende Jahresblätter |
-| `web/05c-year.js` | Jahresansichten, Jahresstreifen und farbige Terminindikatoren |
-| `web/05d-month.js` | Monatsansicht und Auswahl einer Kalenderwoche |
-| `web/05e-week.js` | Siebentägige Wochenansicht mit Terminkarten |
-| `web/05f-day.js` | Tagesansicht, Benutzer-Spalten und Zeitzonen |
-| `web/06-camera.js` | SVG-viewBox, Zoomstufen, Kamera und Ansichtswechsel |
-| `web/07-input.js` | Maus, Tastatur, Karten verschieben, Zoomen |
-| `web/08-start.js` | Schaltflächen, Start und Notizblock-Ereignisse |
-| `web/paper.js` | Tagebucheinträge, Editor, Medien und Papierkamera |
+1. Oben **Tag** wählen.
+2. In der Personenleiste **Stapeln** anklicken oder die Blätter nebeneinander anzeigen.
+3. Personenbuttons mit der Maus verschieben, um die Reihenfolge zu verändern.
+4. Eine Terminkarte ziehen: Start auf der Minutenskala verändern.
+5. Den schmalen unteren Griff der Karte ziehen: Dauer verändern.
+6. `Strg+Z` und `Strg+Y` ausprobieren.
+7. In Jahr / Monat / Woche mehrtägige **von–bis-Balken** betrachten.
 
-Die JavaScript-Dateien sind bewusst **klassische Skripte in fester
-Reihenfolge**. Kein npm, kein Bundler, kein JavaScript-Framework.
-Dadurch teilen sie sich noch globale Variablen. Für dieses Lernprojekt ist
-das nachvollziehbar, langfristig wäre eine klar definierte Modulschnittstelle
-besser.
+## Zentrale Speicherung
 
-## 3. Wohin mit meinen bisherigen Daten?
+`daten/tagebuch.sqlite3` enthält nun sowohl Tagebuchobjekte als auch den
+zentralen Kalenderstand. Kein separater Datenbankserver nötig.
 
-Diese V9 benutzt weiterhin dieselben Speicherformate wie V6/V7:
+Die Meldung unten zeigt, ob Änderungen gespeichert wurden. Bei gleichzeitigem
+Ändern unterschiedlicher Browser wird ein **Versionskonflikt** angezeigt.
+Die Benutzerin oder der Benutzer entscheidet, welcher gesamte Stand gilt.
 
-- `localStorage` mit den Schlüsseln `midnight.timeplanet.v4` und
-  `midnight.notes.v5` für Kalenderkarten und Schreibtischnotizen
-- `daten/tagebuch.sqlite3` für die Tagebuchobjekte
-- `daten/medien/` für importierte Bilder, Videos, Word- und andere Dateien
+## Wichtige Sicherheitsgrenze
 
-**Wichtig:** `localStorage` hängt unter anderem an der URL und am verwendeten
-Browserprofil. Die Daten im Browser unter einer anderen Portnummer oder im
-pywebview-Profil können sich unterscheiden. Diese V8 ist noch keine
-Mehrbenutzer-Synchronisierung.
+Dies ist ein **lokaler Prototyp**, kein öffentlich erreichbarer Mehrbenutzerserver.
+Keine Logins, keine Rechteprüfung, keine HTTPS-Konfiguration. Bitte den Port nicht
+ins Internet freigeben. Die vorhandenen fünf Demo-Personen sind bislang nur
+Kalenderspuren, keine echten Benutzerkonten.
 
-Vor einem Versionswechsel deshalb bitte Datenordner, altes Projekt und
-gegebenenfalls den bisherigen Browserprofilspeicher sichern.
+## Unterricht und Lesbarkeit
 
-## 4. In welcher Reihenfolge sollte ich den Code lesen?
+- Python: `main.py`, `configuration.py`, `http_routes.py`, `calendar_database.py`, `paper_database.py`
+- JavaScript: `web/01-state.js` bis `web/11-day-interaction.js`, jeweils mit einer klaren Aufgabe
+- `WAS-IST-NEU-V12.md` erläutert die neuen Module.
+- `ZOOM-VERSTEHEN.md`, `CODE-STIL.md`, `PYTHON-VERSTEHEN.md` sind erhalten.
 
-1. `01-state.js` – Welche Daten hat unsere Anwendung?
-2. `04-svg-utils.js` – Wie zeichnet man einen Text oder ein Rechteck in SVG?
-3. `05a-desktop.js` – Aus mehreren SVG-Formen entsteht ein Schreibtisch.
-4. `06-camera.js` – Welchen Ausschnitt der Welt sehen wir?
-5. `07-input.js` – Wie verändert das Mausrad die Kamera?
-6. `05c-year.js` bis `05f-day.js` – Wie erzeugen wir 365 Tage und ihre Termine?
-7. `03-storage.js` – Wie werden Änderungen gespeichert?
-8. `paper.js` und `main.py` – Wie arbeiten Weboberfläche und Python zusammen?
+Keine npm-Installation. Keine Build-Pipeline. Lesbare Funktionen und vier Leerzeichen.
 
-Die zugehörige Lektion steht in **`ZOOM-VERSTEHEN.md`**.
+## Datenübernahme aus V11
 
-## 5. Was ist noch nicht fertig?
-
-Dies ist weiterhin ein **lokaler Prototyp**. Es fehlen unter anderem eine
-Mehrbenutzerdatenbank, Rechteverwaltung, Konfliktlösung, Undo, echte
-3D-Kamerafahrten, ein durchgehendes zeitübergreifendes Endlospapier und
-automatische WhatsApp-Integration. Die Globusgrafik ist schematisch.
-
-Die Funktion `convertLocalTimeToUtc()` verwendet eine einfache iterative
-Umrechnung. Bei doppelt vorkommenden oder ungültigen Uhrzeiten während der
-Sommerzeitumstellung braucht die spätere Anwendung eine explizite Regel.
-
-## 6. Teststatus dieser V9
-
-- Python-Quellcode wurde mit `compileall` geprüft.
-- Sämtliche JavaScript-Dateien bestehen `node --check`.
-- Der lokale HTTP-Server wurde gestartet; HTML und JavaScript wurden
-  erfolgreich geladen.
-- Die Tagebuch-API wurde mit Abruf, Anlegen und Löschen eines
-  Testeintrags geprüft.
-- Ein vollständiger Browser-Regressionstest konnte in der Testumgebung
-  **nicht** ausgeführt werden: Chromium blockiert dort den Seitenaufruf.
-  Daher sind insbesondere die neu getrennten Kalenderdateien noch
-  praktisch im Browser und im pywebview-Fenster zu überprüfen.
-
-## 7. Was ist in V9 neu?
-
-Die bisher 368 Zeilen lange `main.py` wurde in vier Python-Dateien
-getrennt. Python-Methodennamen in der HTTP-Schnittstelle beschreiben
-jetzt direkt, was sie tun. Aus kurzen Ausdrücken wurden teilweise
-benannte Zwischenschritte. Die vier Kalenderansichten wurden in eigene Dateien getrennt.
-Einige lokale Zeichenkoordinaten heißen nun beispielsweise
-`dayColumnLeft`, `laneLeft` oder `laneTop`. Gemeinsame Funktionsaufrufe
-und Speicherschlüssel bleiben unverändert.
-
-**Wichtig:** Ein kurzer Variablenname in einer mathematischen Formel
-ist nicht zwingend schlecht. Einsteiger sollen aber erkennen können,
-was er bedeutet. Siehe `CODE-STIL.md`.
-
-Dies ist ein Refactoring, keine neue Funktionsversion.
+Vor dem Austausch den V11-Ordner, insbesondere `daten/`, sichern. Kopiere bei Bedarf
+den bisherigen Ordner `daten/` nach V12. Die Datenbank erhält zusätzliche Tabellen,
+vorhandene Tagebucheinträge bleiben unverändert. Für Termine gibt es eine einmalige
+Übernahme vom lokalen Browser-Speicher, sofern noch keine zentrale Kalenderrevision
+besteht und derselbe Browser verwendet wird.
 
 
-## V11 – Die Zeitwerkstatt
+## V13 – Kalender bearbeiten und Listen führen
 
-Siehe **WAS-IST-NEU-V11.md** für Bedienung, Speicherorte und Grenzen.
-Zusätzliche Lernmodule: `09-minute-planning.js`, `website-editor.js`, `paper-relations.js`.
+Siehe `WAS-IST-NEU-V13.md`. Start unverändert mit `python main.py`.
 
-**Start:** `python main.py` (im Projektordner). Bei Bedarf `pip install pywebview`.
 
-Beim Update den bisherigen Ordner `daten/` und das alte Projekt vorher sichern.
+## V14: Bearbeitung und Wochen-Rechteck
+Siehe `WAS-IST-NEU-V14.md`. Einmal klicken: wählen; E: bearbeiten; Entf/X: löschen; Doppelklick auf Karte: bearbeiten. In der Woche aus freiem Feld einen Termin über mehrere Tage aufziehen.
+
+## V15: Zeichnen in jeder Kalenderansicht
+
+Siehe `WAS-IST-NEU-V15.md`. Doppelklick auf leere Kalenderzelle: neuer Termin. Ziehen auf freier Kalenderfläche: Zeitintervall.

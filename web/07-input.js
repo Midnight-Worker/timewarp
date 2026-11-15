@@ -111,11 +111,44 @@ function handlePointerDown(pointerEvent) {
     saveAppointmentTitle();
     const worldPoint = screenToWorld(pointerEvent);
 
+    const selectedAppointment = appointmentAtPointer(pointerEvent);
+    const resizeHandle = pointerEvent.target.closest('[data-resize]');
+
+    if (selectedAppointment) {
+        selectAppointment(selectedAppointment);
+    }
+
+    const isDecorativeObject = pointerEvent.target.closest(
+        '[data-desk], [data-year]'
+    );
+    const startingTimeDrawing = !selectedAppointment && !isDecorativeObject &&
+        beginTimeRectangle(worldPoint);
+
+    const visibleMembers = orderedVisibleTeamMembers();
+    const appointmentMemberIndex = selectedAppointment
+        ? visibleMembers.findIndex(member => member.id === selectedAppointment.owner)
+        : -1;
+    const firstMinute = appointmentMemberIndex >= 0
+        ? getDayMinuteAtPosition(worldPoint, appointmentMemberIndex)
+        : 0;
+    const appointmentStartMinute = selectedAppointment
+        ? Math.round((new Date(selectedAppointment.at).getTime() -
+            absoluteTimeAtDayMinute(0).getTime()) / 60000)
+        : 0;
+
     dragSession = {
         pointerId: pointerEvent.pointerId,
+        drawingTime: startingTimeDrawing,
+        dragMode: resizeHandle ? 'resize' : 'move',
+        originalAppointment: selectedAppointment ? {
+            at: selectedAppointment.at,
+            owner: selectedAppointment.owner,
+            duration: selectedAppointment.duration,
+            grabOffsetMinutes: firstMinute - appointmentStartMinute
+        } : null,
         start: worldPoint,
         last: worldPoint,
-        appointment: appointmentAtPointer(pointerEvent),
+        appointment: selectedAppointment,
         interactiveObject: pointerEvent.target.closest('[data-desk],[data-year]'),
         moved: false
     };
@@ -142,10 +175,21 @@ function handlePointerMove(pointerEvent) {
         dragSession.moved = true;
     }
 
-    if (dragSession.interactiveObject) {
+    if (dragSession.drawingTime) {
+        updateTimeRectangle(worldPoint);
+    } else if (dragSession.interactiveObject) {
         // Bei einem anklickbaren Gegenstand keine Kamerabewegung auslösen.
     } else if (dragSession.appointment && dragSession.moved) {
-        moveAppointmentToWorldPosition(dragSession.appointment, worldPoint);
+        if (currentViewLevel === 5) {
+            updateDayAppointmentDuringDrag(
+                dragSession.appointment,
+                worldPoint,
+                dragSession.dragMode,
+                dragSession.originalAppointment
+            );
+        } else {
+            moveAppointmentToWorldPosition(dragSession.appointment, worldPoint);
+        }
     } else {
         cameraViewport.x -= movementX;
         cameraViewport.y -= movementY;
@@ -196,7 +240,14 @@ function finishPointerDrag(pointerEvent) {
         return;
     }
 
-    ignoreNextClick = dragSession.moved;
+    const wasDrawingTime = dragSession.drawingTime;
+    const wasDragged = dragSession.moved;
+    ignoreNextClick = wasDragged;
+
+    if (wasDrawingTime) {
+        finishTimeRectangle(wasDragged);
+    }
+
     if (dragSession.appointment && dragSession.moved) {
         saveAppointments();
     }
@@ -213,9 +264,11 @@ function handleCalendarClick(pointerEvent) {
 
     const appointment = appointmentAtPointer(pointerEvent);
     if (appointment) {
-        editAppointmentTitle(appointment, pointerEvent);
+        selectAppointment(appointment);
         return;
     }
+
+    selectAppointment(null);
 
     const desktopObject = pointerEvent.target.closest('[data-desk]');
     if (desktopObject) {
@@ -237,6 +290,11 @@ function handleCalendarClick(pointerEvent) {
     }
 
     const userElement = pointerEvent.target.closest('[data-user]');
+    if (userElement && currentViewLevel === 5 && dayStackMode) {
+        moveTeamMember(userElement.dataset.user, teamMemberOrder[0]);
+        return;
+    }
+
     if (userElement && userElement.dataset.user !== 'me') {
         const userId = userElement.dataset.user;
         if (visibleTeamMemberIds.has(userId)) {
@@ -262,68 +320,37 @@ function handleDesktopClick(objectName) {
 }
 
 function handleCalendarDoubleClick(pointerEvent) {
-    if (appointmentAtPointer(pointerEvent)) {
-        return;
-    }
-
-    const worldPoint = screenToWorld(pointerEvent);
-    const clickedDate = dateAtWorldPosition(worldPoint);
-
-    if (currentViewLevel <= 2) {
-        changeViewLevel(currentViewLevel + 1, clickedDate);
-        return;
-    }
-
-    if (currentViewLevel === 3) {
-        changeViewLevel(4, clickedDate);
-        return;
-    }
-
-    if (currentViewLevel === 4) {
-        changeViewLevel(5, clickedDate);
-        return;
-    }
-
-    createAppointmentAtPointer(pointerEvent, worldPoint);
-}
-
-function createAppointmentAtPointer(pointerEvent, worldPoint) {
-    const userElement = pointerEvent.target.closest('[data-user]');
-    const ownerId = userElement ? userElement.dataset.user : 'me';
-
-    const visibleMembers = teamMembers.filter(member =>
-        visibleTeamMemberIds.has(member.id)
+    // Ein Doppelklick auf eine Karte ist NIE ein Befehl zum Neuanlegen.
+    // elementFromPoint bewahrt das echte Ziel bei SVG-Pointer-Capture.
+    const elementUnderMouse = document.elementFromPoint(
+        pointerEvent.clientX,
+        pointerEvent.clientY
     );
-    const memberColumnIndex = visibleMembers.findIndex(member =>
-        member.id === ownerId
-    );
+    const card = elementUnderMouse && elementUnderMouse.closest('[data-card]');
+    const existingAppointment = card
+        ? appointments.find(item => String(item.id) === card.dataset.card)
+        : appointmentAtPointer(pointerEvent);
 
-    // In der Tagesansicht entsprechen 53.7 SVG-Einheiten etwa einer Stunde.
-    const hour = Math.max(
-        0,
-        Math.min(23, Math.round((worldPoint.y - 296 -
-            (ownerId === 'me' ? 0 : 25)) / 53.7))
-    );
+    if (existingAppointment) {
+        selectAppointment(existingAppointment);
+        openAppointmentEditor(existingAppointment);
+        return;
+    }
 
-    const newAppointment = {
-        id: Date.now() + Math.random(),
-        at: convertLocalTimeToUtc(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth() + 1,
-            selectedDate.getDate(),
-            hour,
-            0,
-            homeTimeZone
-        ),
-        owner: ownerId,
-        title: 'Neue Aufgabe',
-        duration: 60
-    };
+    const worldPosition = screenToWorld(pointerEvent);
 
-    appointments.push(newAppointment);
-    saveAppointments();
-    renderCurrentScene();
-    editAppointmentTitle(newAppointment, pointerEvent);
+    // In jeder Kalenderansicht auf einem leeren Tages- oder Zeitfeld
+    // einen neuen Termin anlegen. Auf Titeln bleibt Doppelklick Navigation.
+    if (currentViewLevel >= 1 && currentViewLevel <= 5 &&
+        createAppointmentOnEmptyCalendar(worldPosition)) {
+        return;
+    }
+
+    // Außerhalb der eigentlichen Kalenderflächen hineinzoomen.
+    if (currentViewLevel >= -1 && currentViewLevel < 5) {
+        const chosenDate = dateAtWorldPosition(worldPosition);
+        changeViewLevel(currentViewLevel + 1, chosenDate);
+    }
 }
 
 function handleGlobalKeyboard(keyboardEvent) {
@@ -335,6 +362,49 @@ function handleGlobalKeyboard(keyboardEvent) {
     );
 
     if (typingInForm) {
+        return;
+    }
+
+    const activeDialog = !appointmentDialog.hidden;
+    if (activeDialog) {
+        if (keyboardEvent.key === 'Escape') {
+            closeAppointmentEditor();
+        }
+        return;
+    }
+
+    if (!keyboardEvent.ctrlKey && !keyboardEvent.metaKey && !keyboardEvent.altKey) {
+        const keyForEditing = keyboardEvent.key.toLowerCase();
+
+        if (keyForEditing === 'e' && selectedAppointment()) {
+            keyboardEvent.preventDefault();
+            editSelectedAppointment();
+            return;
+        }
+
+        if ((keyboardEvent.key === 'Delete' || keyForEditing === 'x') &&
+            selectedAppointment()) {
+            keyboardEvent.preventDefault();
+            deleteSelectedAppointment();
+            return;
+        }
+    }
+
+    if ((keyboardEvent.ctrlKey || keyboardEvent.metaKey) &&
+        keyboardEvent.key.toLowerCase() === 'z') {
+        keyboardEvent.preventDefault();
+        if (keyboardEvent.shiftKey) {
+            redoCalendarChange();
+        } else {
+            undoCalendarChange();
+        }
+        return;
+    }
+
+    if ((keyboardEvent.ctrlKey || keyboardEvent.metaKey) &&
+        keyboardEvent.key.toLowerCase() === 'y') {
+        keyboardEvent.preventDefault();
+        redoCalendarChange();
         return;
     }
 

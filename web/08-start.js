@@ -16,23 +16,7 @@ function closeNotepad() {
 }
 
 function addUnplannedNote() {
-    const noteInput = document.querySelector('#noteInput');
-    const noteText = noteInput.value.trim();
-
-    if (!noteText) {
-        return;
-    }
-
-    const newNote = {
-        id: Date.now() + Math.random(),
-        text: noteText
-    };
-
-    unplannedNotes.unshift(newNote);
-    noteInput.value = '';
-
-    saveUnplannedNotes();
-    noteInput.focus();
+    addTaskFromInput();
 }
 
 function handleNoteDrop(pointerEvent) {
@@ -100,12 +84,6 @@ noteCalendarButton.addEventListener('click', () => {
     changeViewLevel(2);
 });
 
-noteInput.addEventListener('keydown', keyboardEvent => {
-    if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
-        keyboardEvent.preventDefault();
-        addUnplannedNote();
-    }
-});
 
 // Eine ungeplante Notiz kann per Drag-and-drop in einen Tag übernommen werden.
 svg.addEventListener('dragover', pointerEvent => {
@@ -133,3 +111,4 @@ window.paperAPI = {
 renderUnplannedNotes();
 renderCurrentScene();
 fitCameraToScene();
+initializeSharedCalendar();

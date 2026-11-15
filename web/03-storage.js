@@ -70,6 +70,9 @@ function loadAppointments() {
 function saveAppointments() {
     const serializedAppointments = JSON.stringify(appointments);
     localStorage.setItem(APPOINTMENTS_STORAGE_KEY, serializedAppointments);
+    if (typeof rememberCalendarChange === "function") {
+        rememberCalendarChange();
+    }
 }
 
 function saveUnplannedNotes() {
@@ -77,46 +80,20 @@ function saveUnplannedNotes() {
     renderUnplannedNotes();
 }
 
+/** Aktualisiert alle Ansichten der Aufgabenliste. */
 function renderUnplannedNotes() {
-    const notesList = document.querySelector('#noteList');
-    const noteCounter = document.querySelector('#noteCount');
+    if (typeof renderNotepadRows === 'function') {
+        renderNotepadRows();
+    }
+    if (typeof renderTaskTray === 'function') {
+        renderTaskTray();
+    }
 
-    notesList.replaceChildren();
-    noteCounter.textContent = unplannedNotes.length;
+    document.querySelector('#noteCount').textContent =
+        unplannedNotes.filter(note => !note.done).length;
 
-    for (const note of unplannedNotes) {
-        const listItem = document.createElement('li');
-        const noteText = document.createElement('span');
-        const scheduleButton = document.createElement('button');
-        const removeButton = document.createElement('button');
-
-        noteText.textContent = note.text;
-        noteText.draggable = true;
-        noteText.title = 'Auf einen Tag im Kalender ziehen';
-
-        noteText.addEventListener('dragstart', dragEvent => {
-            dragEvent.dataTransfer.setData(
-                'text/plain',
-                `midnight-note:${note.id}`
-            );
-            dragEvent.dataTransfer.effectAllowed = 'move';
-        });
-
-        scheduleButton.textContent = 'Heute';
-        scheduleButton.title = 'Als Aufgabe für den gewählten Tag einplanen';
-        scheduleButton.addEventListener('click', () => {
-            scheduleUnplannedNote(note.id, selectedDate);
-        });
-
-        removeButton.textContent = '×';
-        removeButton.title = 'Notiz löschen';
-        removeButton.addEventListener('click', () => {
-            unplannedNotes = unplannedNotes.filter(entry => entry.id !== note.id);
-            saveUnplannedNotes();
-        });
-
-        listItem.append(noteText, scheduleButton, removeButton);
-        notesList.appendChild(listItem);
+    if (currentViewLevel === -1 && typeof renderCurrentScene === 'function') {
+        renderCurrentScene();
     }
 }
 
@@ -133,7 +110,7 @@ function scheduleUnplannedNote(
 ) {
     const note = unplannedNotes.find(entry => entry.id === noteId);
 
-    if (!note) {
+    if (!note || note.done) {
         return;
     }
 

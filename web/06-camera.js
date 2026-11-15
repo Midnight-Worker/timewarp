@@ -46,10 +46,11 @@ function sceneDimensions() {
     }
 
     if (currentViewLevel === 5) {
-        const visibleMembers = teamMembers.filter(member =>
-            visibleTeamMemberIds.has(member.id)
-        );
-        return [140 + visibleMembers.length * 389, 1800];
+        const visibleMembers = orderedVisibleTeamMembers();
+        const width = dayStackMode
+            ? 520 + visibleMembers.length * 55
+            : 140 + visibleMembers.length * 389;
+        return [width, 1800];
     }
 
     return [2300, 1450];
@@ -132,6 +133,11 @@ function renderCurrentScene() {
     updateDateHeading();
     updateViewButtons();
     updateTeamMemberButtons();
+
+    // Nach jedem Neuzeichnen die aktuell ausgewählte Karte erneut markieren.
+    if (typeof highlightSelectedAppointment === 'function') {
+        highlightSelectedAppointment();
+    }
 }
 
 function updateDateHeading() {
@@ -168,7 +174,19 @@ function updateTeamMemberButtons() {
     const container = document.querySelector('#people');
     container.replaceChildren();
 
-    for (const member of teamMembers) {
+    if (currentViewLevel === 5) {
+        const stackButton = document.createElement('button');
+        stackButton.textContent = dayStackMode ? '▤ Nebeneinander' : '▱ Stapeln';
+        stackButton.title = 'Tagesblätter zwischen Stapel und Spalten wechseln';
+        stackButton.addEventListener('click', () => {
+            dayStackMode = !dayStackMode;
+            renderCurrentScene();
+            fitCameraToScene();
+        });
+        container.appendChild(stackButton);
+    }
+
+    for (const member of teamMemberOrder.map(findTeamMember)) {
         const isVisible = visibleTeamMemberIds.has(member.id);
         const button = document.createElement('button');
 
@@ -179,7 +197,23 @@ function updateTeamMemberButtons() {
         const marker = isVisible ? '●' : '○';
         const location = currentViewLevel === 5 ? ` · ${member.place}` : '';
         button.innerText = `${marker} ${member.name}${location}`;
-        button.title = member.zone;
+        button.title = `${member.zone} · Ziehen, um die Reihenfolge zu ändern`;
+        button.draggable = true;
+        button.dataset.member = member.id;
+
+        button.addEventListener('dragstart', event => {
+            event.dataTransfer.setData('application/x-midnight-member', member.id);
+            button.classList.add('dragging');
+        });
+        button.addEventListener('dragend', () => button.classList.remove('dragging'));
+        button.addEventListener('dragover', event => event.preventDefault());
+        button.addEventListener('drop', event => {
+            event.preventDefault();
+            const movedId = event.dataTransfer.getData('application/x-midnight-member');
+            if (movedId) {
+                moveTeamMember(movedId, member.id);
+            }
+        });
 
         button.addEventListener('click', () => {
             // Die eigene Tagesebene bleibt immer sichtbar.

@@ -107,3 +107,25 @@ Ein intuitiver, spielerischer, räumlicher Team-Kalender. Kein klassisches Trell
 - [x] Papierkarten verbinden und gruppiert verschieben (Beziehungen derzeit nur lokal gespeichert)
 - [ ] Echte 3D-Engine und nahtlose Kamerafahrten
 - [ ] Synchronisierung von Website-Entwürfen und Papierbeziehungen über den Server
+
+
+## V12 – Zeitspuren (November 2026)
+
+- [x] Personenblätter in Tagesansicht umsortieren, parallel oder räumlich überlagert anzeigen (lokal)
+- [x] Tageskarten minutengenau verschieben und Dauer über Ziehgriff verändern (24-Stunden-Referenztag)
+- [x] Farbcodierte von–bis-Balken für mehrtägige Termine in Woche, Monat und Jahr
+- [x] Kalenderstand über zentrale lokale SQLite-API speichern, mit Undo/Redo und 409-Konfliktentscheidung
+- [ ] Echte Nutzerkonten, Rechte, sichere entfernte Verbindung
+- [ ] Feldweises Zusammenführen statt globaler Revisionskonflikte
+- [ ] Vollständige Sommerzeit-Kantenfälle und Aufenthalts-/Reisezeitzonen
+- [ ] Echte grafische Regressionstests aller Mausaktionen in pywebview
+
+
+## V13 – Karten und Listen
+
+- [x] Termine mit Titel, Beginn, Ende, Person bearbeiten und löschen
+- [x] Termine in Tagesansicht über Tagesgrenzen ziehen (ohne automatisches Umblättern)
+- [x] Trello-artige Liste: Enter für nächsten Eintrag, Autosave, Sortierung, Abhaken, Löschen
+- [x] Ausklappbare Liste für Drag-and-drop in Kalender
+- [ ] Notizliste ebenfalls zentral über API synchronisieren
+- [ ] Beim Ziehen automatisch in angrenzende Tage scrollen

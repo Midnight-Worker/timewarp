@@ -17,6 +17,7 @@ from configuration import (
     PUBLIC_FILES,
     WEB_DIRECTORY,
 )
+from calendar_database import read_calendar, replace_calendar
 from paper_database import (
     ALLOWED_PAPER_ITEM_KINDS,
     PAPER_ITEM_FIELDS,
@@ -78,6 +79,10 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
         file_name = requested_path.lstrip("/")
         if file_name in PUBLIC_FILES and requested_path == "/" + file_name:
             self.send_web_asset(file_name)
+            return
+
+        if requested_path == "/api/calendar":
+            self.send_http_response(200, read_calendar())
             return
 
         if requested_path == "/api/items":
@@ -170,6 +175,34 @@ class OrganizerRequestHandler(BaseHTTPRequestHandler):
             self.save_or_update_paper_item()
         else:
             self.send_http_response(404, {"error": "Unbekannter Pfad"})
+
+    def do_PUT(self):
+        if urlparse(self.path).path != "/api/calendar":
+            self.send_http_response(404, {"error": "Unbekannter Pfad"})
+            return
+
+        try:
+            payload = self.read_json_request()
+            expected_revision = payload["revision"]
+            appointments = payload["appointments"]
+            if type(expected_revision) is not int or expected_revision < 0:
+                raise ValueError("Ungültige Revisionsnummer")
+            if not isinstance(appointments, list) or len(appointments) > 20000:
+                raise ValueError("Ungültige Terminliste")
+            for appointment in appointments:
+                if not isinstance(appointment, dict):
+                    raise ValueError("Ungültiger Termin")
+                if not all(field in appointment for field in ("id", "at", "owner", "title", "duration")):
+                    raise ValueError("Fehlende Terminangaben")
+                if not isinstance(appointment["title"], str) or len(appointment["title"]) > 140:
+                    raise ValueError("Ungültiger Titel")
+                if not isinstance(appointment["duration"], (int, float)) or not 1 <= appointment["duration"] <= 525600:
+                    raise ValueError("Ungültige Dauer")
+
+            saved, calendar = replace_calendar(expected_revision, appointments)
+            self.send_http_response(200 if saved else 409, calendar)
+        except (KeyError, ValueError, TypeError) as error:
+            self.send_http_response(400, {"error": str(error)})
 
     def receive_media_upload(self):
         """Speichert eine hochgeladene Datei unter einer zufälligen Medien-ID."""

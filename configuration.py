@@ -22,7 +22,10 @@ PUBLIC_FILES = {
     "01-state.js", "02-time.js", "03-storage.js", "04-svg-utils.js",
     "05a-desktop.js", "05b-globe.js",
     "05c-year.js", "05d-month.js", "05e-week.js", "05f-day.js",
-    "06-camera.js", "07-input.js", "08-start.js"
+    "06-camera.js", "07-input.js", "08-start.js",
+    "10-calendar-sync.js", "11-day-interaction.js",
+    "12-appointment-editor.js", "13-notepad.js",
+    "14-appointment-selection.js", "15-time-drawing.js"
 }
 
 

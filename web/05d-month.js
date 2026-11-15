@@ -54,6 +54,7 @@ function renderMonthView() {
     }
 
     drawSelectedWeekOutline(monthSheet, year, monthIndex, numberOfDays);
+    drawMonthRangeBars(monthSheet, year, monthIndex, numberOfDays);
 }
 
 function drawMonthDayColumn(monthSheet, date) {
@@ -118,3 +119,31 @@ function drawSelectedWeekOutline(monthSheet, year, monthIndex, numberOfDays) {
     );
 }
 
+
+/** Monatsbalken: sichtbaren Abschnitt eines mehrtägigen Termins zeichnen. */
+function drawMonthRangeBars(parent, year, monthIndex, daysInCurrentMonth) {
+    const firstDayKey = formatLocalDate(new Date(year, monthIndex, 1));
+    const afterMonthKey = formatLocalDate(new Date(year, monthIndex + 1, 1));
+
+    for (const appointment of appointments) {
+        const start = appointmentUtcDate(appointment);
+        const end = new Date(start.getTime() + appointment.duration * 60000);
+        const startKey = dateStringInTimeZone(start, homeTimeZone);
+        const endKey = dateStringInTimeZone(new Date(end.getTime() - 1), homeTimeZone);
+
+        if (endKey < firstDayKey || startKey >= afterMonthKey) {
+            continue;
+        }
+
+        const startDay = startKey < firstDayKey ? 1 : Number(startKey.slice(8));
+        const endDay = endKey >= afterMonthKey
+            ? daysInCurrentMonth
+            : Number(endKey.slice(8));
+        const ownerIndex = teamMemberOrder.indexOf(appointment.owner);
+        const left = 150 + (startDay - 1) * 209 + 9;
+        const width = (endDay - startDay + 1) * 209 - 18;
+        const top = 918 + ownerIndex * 17;
+        const group = createSvgElement('g', {'data-card': appointment.id}, parent);
+        drawSvgRectangle(group, left, top, width, 12, findTeamMember(appointment.owner).color);
+    }
+}

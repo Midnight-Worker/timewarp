@@ -5,11 +5,11 @@
  * Nur die aufgedruckte lokale Uhrzeit unterscheidet sich pro Person.
  */
 function renderDayView() {
-    const visibleMembers = teamMembers.filter(member =>
-        visibleTeamMemberIds.has(member.id)
-    );
+    const visibleMembers = orderedVisibleTeamMembers();
 
-    const daySheetWidth = 140 + visibleMembers.length * 389;
+    const daySheetWidth = dayStackMode
+        ? 520 + visibleMembers.length * 55
+        : 140 + visibleMembers.length * 389;
     const daySheetHeight = 1800;
     const daySheet = createSvgElement('g');
 
@@ -34,13 +34,18 @@ function renderDayView() {
 
     drawSvgText(
         daySheet, 70, 146,
-        'Gleicher Zeitpunkt · verschiedene lokale Uhrzeiten / Datumswechsel',
+        'Personen oben frei sortieren · Karten ziehen · unteren Griff für Dauer',
         22, '#bbd6e3'
     );
 
-    visibleMembers.forEach((member, index) => {
-        drawTeamMemberDayLane(daySheet, member, index);
-    });
+    // Stapel: hinterste Blätter zuerst, oberstes Blatt zuletzt zeichnen.
+    const indices = visibleMembers.map((member, index) => index);
+    if (dayStackMode) {
+        indices.reverse();
+    }
+    for (const index of indices) {
+        drawTeamMemberDayLane(daySheet, visibleMembers[index], index);
+    }
 
     drawSvgText(
         daySheet, 75, daySheetHeight - 50,
@@ -50,8 +55,9 @@ function renderDayView() {
 }
 
 function drawTeamMemberDayLane(daySheet, member, columnIndex) {
-    const laneLeft = 75 + columnIndex * 389;
-    const laneTop = 196 + columnIndex * 25;
+    const position = dayLaneGeometry(columnIndex);
+    const laneLeft = position.left;
+    const laneTop = position.top;
 
     const lane = createSvgElement('g', {
         'data-user': member.id,
@@ -181,8 +187,52 @@ function drawAppointmentsInDayLane(lane, member, laneLeft, laneTop) {
         const cardY = laneTop + 100 + (minutesFromMidnight / 60) * 53.7;
         const cardHeight = Math.max(32, (visibleDurationMinutes / 60) * 53.7);
 
-        renderAppointmentCard(
+        const cardGroup = renderAppointmentCard(
             lane, appointment, laneLeft + 113, cardY, 244, cardHeight
+        );
+
+        // Ein eingerückter Rand bedeutet: Der Termin beginnt oder endet heute.
+        // Ein herausragender Streifen bedeutet: Fortsetzung am Nachbartag.
+        if (appointmentStart < startOfDay) {
+            drawSvgRectangle(cardGroup, laneLeft + 105, cardY,
+                8, cardHeight, member.color, 'none', {
+                    rx: 1,
+                    'pointer-events': 'none'
+                });
+            drawSvgText(cardGroup, laneLeft + 119, cardY + 17,
+                '◀ vom Vortag', 12, '#ffffff', 650, {
+                    'pointer-events': 'none'
+                });
+        }
+
+        if (appointmentEnd > endOfDay) {
+            drawSvgRectangle(cardGroup, laneLeft + 357, cardY,
+                9, cardHeight, member.color, 'none', {
+                    rx: 1,
+                    'pointer-events': 'none'
+                });
+            if (cardHeight > 46) {
+                drawSvgText(cardGroup, laneLeft + 119, cardY + cardHeight - 12,
+                    'Fortsetzung morgen ▶', 11, '#ffffff', 650, {
+                        'pointer-events': 'none'
+                    });
+            }
+        }
+
+        // Ziehgriff: nur im Tageskalender, getrennt vom Kartentitel.
+        drawSvgRectangle(
+            cardGroup,
+            laneLeft + 176,
+            cardY + cardHeight - 8,
+            120,
+            8,
+            member.color,
+            'none',
+            {
+                'data-resize': appointment.id,
+                style: 'cursor: ns-resize',
+                rx: 4
+            }
         );
     }
 }
