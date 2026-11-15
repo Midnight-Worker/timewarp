@@ -1,4 +1,4 @@
-"""Midnight Organizer V6 – lokaler Webserver, SQLite und Medienablage.
+"""Midnight Organizer V7 – lesbar strukturierter lokaler Webserver, SQLite und Medienablage.
 Start: python main.py  (pywebview optional)
 """
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -67,12 +67,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path in ('/paper.css', '/paper.js'):
-            name = parsed.path.lstrip('/')
-            mime = 'text/css; charset=utf-8' if name.endswith('.css') else 'text/javascript; charset=utf-8'
-            return self.send(200, (ROOT / name).read_bytes(), mime)
+        # Nur unsere freigegebenen Oberflächendateien bereitstellen.
+        # Kein Zugriff auf die Datenbank oder private Dateien über HTTP.
         if parsed.path in ('/', '/index.html'):
-            return self.send(200, (ROOT / 'index.html').read_bytes(), 'text/html; charset=utf-8')
+            return self.send(200, (ROOT / 'web' / 'index.html').read_bytes(),
+                             'text/html; charset=utf-8')
+        static_files = {
+            '/app.css', '/paper.css', '/paper.js',
+            '/01-state.js', '/02-time.js', '/03-storage.js',
+            '/04-svg-utils.js', '/05-scenes.js', '/06-camera.js',
+            '/07-input.js', '/08-start.js',
+        }
+        if parsed.path in static_files:
+            filename = parsed.path.lstrip('/')
+            mime = ('text/css' if filename.endswith('.css')
+                    else 'text/javascript')
+            return self.send(200, (ROOT / 'web' / filename).read_bytes(),
+                             mime + '; charset=utf-8')
         if parsed.path == '/api/items':
             day = parse_qs(parsed.query).get('day', [''])[0]
             if len(day) != 10: return self.send(400, {'error': 'Datum fehlt'})
@@ -141,7 +152,7 @@ if __name__ == '__main__':
     print(f'Midnight Organizer: {url}  | Daten: {DATA}')
     try:
         import webview
-        webview.create_window('Midnight Organizer · V6 Endlospapier',url,fullscreen=True,background_color='#071320')
+        webview.create_window('Midnight Organizer · V7 Lesbarer Code',url,fullscreen=True,background_color='#071320')
         webview.start()
     except ImportError:
         print('pywebview nicht installiert – öffne die URL im Browser. Strg+C beendet.')

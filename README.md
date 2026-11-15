@@ -1,47 +1,67 @@
-# Midnight Organizer V6 — Endlospapier
+# Midnight Organizer V7 – Lesbare Ausgabe (Refactoring von V6)
 
-Der bisherige Schreibtisch, Zeitplanet und Kalender bleiben enthalten. **Neu:** die äußerste Detailstufe als verschiebbare Tagebuch-Papierfläche.
+Diese Version trennt den Quellcode von **V6** in thematische Dateien. Ziel: Du kannst
+Kamera, Kalender oder Papierwelt getrennt finden und bearbeiten. **Keine neue Funktion.**
 
-## Installation und Start
+## Start
 
-Python 3.10+ erforderlich. Optional für eigenes Desktopfenster:
+```bash
+python main.py
+```
+
+Optional für ein eigenes Desktopfenster:
 
 ```bash
 pip install pywebview
 python main.py
 ```
 
-Ohne pywebview reicht **`python main.py`**. Dann wird nach Möglichkeit der Browser geöffnet. Sonst die angezeigte Adresse aufrufen: **http://127.0.0.1:8877**.
+Auch ohne pywebview öffnet sich die Anwendung im Browser unter
+`http://127.0.0.1:8877`. Bitte **nicht** `index.html` per `file://` öffnen.
 
-**Wichtig:** `index.html` nicht direkt als `file://` öffnen. Die neue Medienablage und SQLite laufen über den kleinen Python-Webserver.
+## Wo finde ich was?
 
-## Bedienung
+| Datei | Zweck |
+|---|---|
+| `main.py` | HTTP-Server, API, SQLite, Speicherung der importierten Dateien |
+| `web/index.html` | SVG-Bühne, Schaltflächen und Papier-HTML |
+| `web/app.css` | Schreibtisch/Kalender-Stil |
+| `web/01-state.js` | Gemeinsamer Zustand, Personen, Ansichten |
+| `web/02-time.js` | Zeitzonenfunktionen |
+| `web/03-storage.js` | Kalenderkarten, Notizen, Speichern im Browser |
+| `web/04-svg-utils.js` | Kleine SVG-Zeichenhelfer |
+| `web/05-scenes.js` | Schreibtisch, Globus, Jahr, Monat, Woche, Tag |
+| `web/06-camera.js` | Kamera, Zoomstufen, Ansichtswechsel, SVG-Koordinaten |
+| `web/07-input.js` | Mausrad, Maus, Klicks, Drag-and-drop |
+| `web/08-start.js` | Buttons, Tastatur, Notizblock, Start |
+| `web/paper.js` | Tagebuch, Dateiuploads, Bild-, Audio- und Videokarten |
+| `web/paper.css` | Tagebuch-Gestaltung |
 
-1. Mit `Tag` zur Tagesansicht und mit dem Mausrad weiter hineinzoomen. Oder oben direkt **Endlospapier** anklicken.
-2. Auf **✎ Text** klicken und eine Tagebuchnotiz schreiben. Das Feld speichert automatisch.
-3. Dateien aus dem Explorer auf das Papier ziehen oder **+ Fotos / Dateien** verwenden. Unterstützt Bilder, Audiodateien, Videos, DOCX, XLSX, PDFs und andere Dateien bis zu 100 MB je Datei.
-4. Einträge an der **Titelleiste ziehen**, an der unteren rechten Ecke in der **Größe ändern**. Auf der leeren Fläche ziehen = Kamera verschieben; Mausrad = Papier-Zoom.
-5. **☏ Nachricht**: Text einer exportierten/kopierten WhatsApp-Nachricht einfügen. Sprachaufnahmen als Audio-Datei importieren, z.B. .opus oder .ogg (Wiedergabe abhängig vom Browser-Codec).
-6. Pro Video **GIF-Vorschau** an- oder ausschalten: bei Aktivierung stumm und in Endlosschleife, ansonsten normales Videoplayer-Verhalten.
-7. **Bild in Text:** Zuerst in eine Textnotiz klicken, dann die Schaltfläche wählen und ein Foto laden. Das Foto wird links im Text platziert und der Text umfließt es.
-8. Über die Datumsauswahl und Tag-Pfeile kannst du vergangene Erlebnisse dokumentieren oder zukünftige Tage vorbereiten.
-9. **✎ Notizblock übernehmen** kopiert alle noch nicht verplanten Notizblock-Stichpunkte aus V5 in einen neuen Tagebucheintrag.
+Die Kalenderdateien werden absichtlich als **klassische JavaScript-Skripte in
+fester Reihenfolge** geladen. Ihre Variablen/Funktionen sind untereinander
+sichtbar. So brauchen wir **weder npm noch Bundler**. Als nächster Schritt
+können wir die Schnittstellen zwischen diesen Modulen ausdrücklich definieren.
 
-## Wo die Daten liegen
+### Daten
 
-Automatisch neben `main.py` erzeugt:
+- `daten/tagebuch.sqlite3`: SQLite-Datenbank der Tagebuchkarten
+- `daten/medien/`: hochgeladene Originaldateien
+- Browser-`localStorage`: Kalendertermine und Schreibtischnotizen (wie in V6)
 
-- `daten/tagebuch.sqlite3`: Tagebuchobjekte, Positionen, Datumszuordnung und Dateimetadaten
-- `daten/medien/`: importierte Dateien
+**Vor dem Wechsel** bitte die V6-Dateien und den Datenordner sichern. V7 nutzt
+die bestehenden Speicherformate, migriert aber noch nicht alle Daten in SQLite.
 
-**Beide sichern!** V5-Kalenderkarten und Schreibtisch-Notizen sind vorerst weiterhin browsergebunden (`localStorage`), während V6-Tagebucheinträge in SQLite gespeichert werden. Auch beim Browserwechsel sind sie damit vorhanden, solange derselbe lokale Python-Server benutzt wird.
+### Sicherheit und Grenzen
 
-## Grenzen von V6
+Ein lokaler Prototyp, kein öffentlich erreichbarer Teamserver. Keine
+Benutzerkonten, kein Undo, keine automatische WhatsApp-Anbindung und noch kein
+nahtloses Tag-übergreifendes Papier.
 
-- Noch **kein** echter Server für mehrere Nutzer; keine Anmeldung und keine Rechteverwaltung. Server nur auf `127.0.0.1`, nicht ins Internet stellen.
-- Die Papierfläche ist endlos navigierbar, aber **je Datum eine eigene Fläche**; nahtlose stundenübergreifende Zeitkoordinaten stehen noch aus.
-- Word/Excel/PDFs werden gespeichert und als Dateien geöffnet/heruntergeladen, **nicht im Papier bearbeitet**.
-- WhatsApp-Nachrichten werden manuell per Kopieren/Einfügen oder als exportierte Dateien übernommen. Kein Zugriff auf WhatsApp-Konten oder automatische Synchronisierung.
-- Browser/pywebview müssen den jeweiligen Audio-/Video-Codec unterstützen.
-- Vorschau-Schleife kann vom Browser-Autoplay-Schutz blockiert werden.
-- Autosave, Datei-Upload und Löschen sind im Prototyp implementiert; produktiv fehlen Versionierung, Undo und Backup-Automatik.
+## So testest du eine Änderung
+
+1. In `web/06-camera.js` eine Funktion suchen (z. B. `fit`).
+2. Nur dort etwas verändern und speichern.
+3. Browser mit `Strg + F5` neu laden.
+4. Bei Problemen Entwicklerwerkzeuge/F12 öffnen und Konsole ansehen.
+
+Siehe **ZOOM-VERSTEHEN.md** für eine ausführlichere Erklärung.

@@ -1,0 +1,205 @@
+(()=> {
+    'use strict'; const root=document.querySelector('#paperOverlay'), world=document.querySelector('#paperWorld'), canvas=document.querySelector('#paperCanvas'), msg=document.querySelector('#paperMsg'), dayInput=document.querySelector('#paperDay'), pick=document.querySelector('#paperFiles'); let day='', items=[], pan= {
+        x:210, y:180, z:1
+    } , drag=null, saveTimers=new Map(), active=false, dropDepth=0, lastTextItem=null; const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random(); const escapeHTML=s=>String(s).replace(/[&<>"']/g, c=>( {
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    } [c])); function status(t) {
+        msg.textContent=t; setTimeout(()=> {
+            if(msg.textContent===t)msg.textContent=''
+        } , 3500)
+    }
+const media=id=>'/media/'+encodeURIComponent(id); function sanitize(html) {
+        const doc=new DOMParser().parseFromString('<div>'+html+'</div>', 'text/html'); const accepted=new Set(['DIV', 'P', 'BR', 'B', 'STRONG', 'EM', 'I', 'U', 'SPAN', 'IMG', 'UL', 'OL', 'LI']); // Sichere Speicherung eigener Notizbilder: src darf nur auf lokale Medien-IDs zeigen.
+        function sanitizeNode(n) {
+            for(const ch of [...n.childNodes]) {
+                if(ch.nodeType===8) {
+                    ch.remove(); continue
+                } if(ch.nodeType!==1)continue; if(!accepted.has(ch.tagName)) {
+                    ch.replaceWith(...ch.childNodes); continue
+                }
+const src=ch.getAttribute('src')||''; const style=ch.getAttribute('class')||''; for(const a of [...ch.attributes])ch.removeAttribute(a.name); if(ch.tagName==='IMG'&&/^\/media\/[a-f0-9]{32}$/.test(src)) {
+                    ch.setAttribute('src', src); ch.setAttribute('class', style==='float-right'?'float-right':'float-left');
+                } else if(ch.tagName==='IMG') {
+                    ch.remove(); continue
+                } sanitizeNode(ch)
+            }
+        } sanitizeNode(doc.body.firstElementChild); return doc.body.firstElementChild.innerHTML;
+    }
+function persist(item) {
+        if(!active)return; clearTimeout(saveTimers.get(item.id)); saveTimers.set(item.id, setTimeout(async()=> {
+            try {
+                let r=await fetch('/api/items', {
+                    method:'POST', headers: {
+                        'Content-Type':'application/json'
+                    } , body:JSON.stringify(item)
+                } ); if(!r.ok)throw Error(await r.text()); status('✓ gespeichert')
+            } catch(e) {
+                status('Speichern fehlgeschlagen: '+e.message)
+            }
+        } , 450))
+    } async function load() {
+        canvas.replaceChildren(); items=[]; try {
+            let response=await fetch('/api/items?day='+encodeURIComponent(day)); if(!response.ok)throw Error(response.status); items=await response.json(); items.forEach(render); status('Tagebuch geladen')
+        } catch(e) {
+            status('Server nicht erreichbar · bitte python main.py starten')
+        }
+    }
+function makeItem(kind, props= {
+    } ) {
+        const it= {
+            id:uid(), day, kind, x:80+items.length*22, y:80+items.length*18, width:kind==='text'?420:kind==='image'?320:350, height:kind==='text'?260:kind==='video'?265:kind==='image'?270:170, content:'', media_id:'', preview:0, ...props
+        } ; items.push(it); render(it); persist(it); return it
+    }
+function setPan() {
+        canvas.style.transform=`translate(${pan.x}px, ${pan.y}px) scale(${pan.z})`; world.style.backgroundPosition=`${pan.x}px ${pan.y}px`
+    }
+function openDate(d) {
+        if(!/^\d{4}-\d\d-\d\d$/.test(d))return; day=d; dayInput.value=d; pan= {
+            x:210, y:180, z:1
+        } ; setPan(); load()
+    }
+function editText(it, body) {
+        body.addEventListener('input', ()=> {
+            it.content=sanitize(body.innerHTML); persist(it)
+        } ); body.addEventListener('blur', ()=> {
+            it.content=sanitize(body.innerHTML); persist(it)
+        } )
+    }
+function render(it) {
+        const el=document.createElement('article'); el.className='paper-item'; el.dataset.id=it.id; el.style.cssText=`left:${it.x}px;top:${it.y}px;width:${it.width}px;height:${it.height}px`; const head=document.createElement('header'); const name=document.createElement('span'); name.textContent=( {
+            text:'✎ Tagebucheintrag', image:'▧ Foto', video:'▶ Video', audio:'♫ Audio', file:'▤ Dokument', link:'↗ Link', message:'☏ Nachricht'
+        } )[it.kind]||it.kind; const del=document.createElement('button'); del.title='Objekt löschen'; del.textContent='×'; del.onclick=async()=> {
+            if(!confirm('Objekt entfernen? Die hochgeladene Datei bleibt als Sicherung erhalten.'))return; await fetch('/api/items/'+encodeURIComponent(it.id), {
+                method:'DELETE'
+            } ); items=items.filter(x=>x.id!==it.id); el.remove()
+        } ; head.append(name, del); el.append(head); const body=document.createElement('div'); body.className='paper-body'; if(it.kind==='text'||it.kind==='message') {
+            body.contentEditable='true'; body.spellcheck=true; body.innerHTML=sanitize(it.content||''); body.dataset.placeholder='Schreibe deine Geschichte ...'; editText(it, body); body.addEventListener('focus', ()=> {
+                lastTextItem=it.id
+            } )
+        } else if(it.kind==='image') {
+            const img=document.createElement('img'); img.className='preview'; img.src=media(it.media_id); img.alt=it.content||'Foto'; body.style.padding='2px'; body.append(img)
+        } else if(it.kind==='audio') {
+            const name=document.createElement('div'); name.textContent=it.content; const audio=document.createElement('audio'); audio.controls=true; audio.preload='none'; audio.src=media(it.media_id); body.append(name, audio)
+        } else if(it.kind==='video') {
+            const label=document.createElement('label'); label.style.fontSize='12px'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!it.preview; label.append(cb, document.createTextNode(' GIF-Vorschau (stumm, Schleife)')); const v=document.createElement('video'); v.controls=true; v.preload='metadata'; v.playsInline=true; v.src=media(it.media_id); v.muted=cb.checked; v.loop=cb.checked; v.autoplay=cb.checked; cb.onchange=()=> {
+                it.preview=cb.checked?1:0; v.muted=cb.checked; v.loop=cb.checked; if(cb.checked)v.play().catch(()=>status('Autoplay vom Browser blockiert')); else v.pause(); persist(it)
+            } ; body.append(label, v); if(it.preview) v.play().catch(()=> {
+            } );
+        } else if(it.kind==='file'||it.kind==='link') {
+            const a=document.createElement('a'); a.textContent=it.content||'Datei'; a.href=it.kind==='file'?media(it.media_id):it.content; a.target='_blank'; a.rel='noopener noreferrer'; if(it.kind==='file')a.download=it.content; body.append('📎 ', a)
+        } el.append(body); canvas.append(el); head.addEventListener('pointerdown', e=> {
+            if(e.target===del||e.button!==0)return; drag= {
+                type:'item', id:it.id, px:e.clientX, py:e.clientY, ox:it.x, oy:it.y
+            } ; head.setPointerCapture(e.pointerId); e.preventDefault()
+        } ); head.addEventListener('pointermove', e=> {
+            if(!drag||drag.type!=='item'||drag.id!==it.id)return; it.x=drag.ox+(e.clientX-drag.px)/pan.z; it.y=drag.oy+(e.clientY-drag.py)/pan.z; el.style.left=it.x+'px'; el.style.top=it.y+'px'
+        } ); head.addEventListener('pointerup', ()=> {
+            if(drag?.id===it.id) {
+                drag=null; persist(it)
+            }
+        } ); const observer=new ResizeObserver(()=> {
+            if(!el.isConnected)return; const w=el.offsetWidth, h=el.offsetHeight; if(w!==it.width||h!==it.height) {
+                it.width=w; it.height=h; persist(it)
+            }
+        } ); observer.observe(el); return el;
+    }
+function coords(e) {
+        let b=world.getBoundingClientRect(); return {
+            x:(e.clientX-b.left-pan.x)/pan.z, y:(e.clientY-b.top-pan.y)/pan.z
+        }
+    }
+world.addEventListener('pointerdown', e=> {
+        if(e.button!==0||e.target.closest('.paper-item')||e.target.closest('#paperToolbar'))return; drag= {
+            type:'pan', px:e.clientX, py:e.clientY, ox:pan.x, oy:pan.y
+        } ; world.setPointerCapture(e.pointerId); world.classList.add('panning')
+    } ); world.addEventListener('pointermove', e=> {
+        if(drag?.type==='pan') {
+            pan.x=drag.ox+e.clientX-drag.px; pan.y=drag.oy+e.clientY-drag.py; setPan()
+        }
+    } ); world.addEventListener('pointerup', ()=> {
+        if(drag?.type==='pan')drag=null; world.classList.remove('panning')
+    } ); world.addEventListener('wheel', e=> {
+        e.preventDefault(); const old=pan.z, next=Math.min(3.5, Math.max(.35, old*Math.exp(-e.deltaY*.001))); const x=e.clientX, y=e.clientY; pan.x=x-(x-pan.x)*next/old; pan.y=y-(y-pan.y)*next/old; pan.z=next; setPan()
+    } , {
+        passive:false
+    } ); async function upload(file, at) {
+        try {
+            status('Lade '+file.name+' hoch ...'); const r=await fetch('/api/upload?name='+encodeURIComponent(file.name), {
+                method:'POST', headers: {
+                    'Content-Type':file.type||'application/octet-stream'
+                } , body:file
+            } ); if(!r.ok)throw Error((await r.json()).error||r.status); const obj=await r.json(); const kind=file.type.startsWith('image/')?'image':file.type.startsWith('video/')?'video':file.type.startsWith('audio/')?'audio':'file'; makeItem(kind, {
+                x:at.x, y:at.y, content:file.name, media_id:obj.id
+            } ); status('✓ '+file.name+' abgelegt')
+        } catch(e) {
+            status('Import fehlgeschlagen: '+e.message)
+        }
+    } async function filesAt(files, point) {
+        for(const f of files) {
+            await upload(f, point); point= {
+                x:point.x+32, y:point.y+32
+            }
+        }
+    }
+root.addEventListener('dragenter', e=> {
+        e.preventDefault(); dropDepth++; document.querySelector('#paperDrop').classList.add('visible')
+    } ); root.addEventListener('dragover', e=> {
+        e.preventDefault()
+    } ); root.addEventListener('dragleave', ()=> {
+        if(--dropDepth<=0) {
+            dropDepth=0; document.querySelector('#paperDrop').classList.remove('visible')
+        }
+    } ); root.addEventListener('drop', async e=> {
+        e.preventDefault(); dropDepth=0; document.querySelector('#paperDrop').classList.remove('visible'); if(e.dataTransfer.files.length)await filesAt([...e.dataTransfer.files], coords(e)); else {
+            const text=e.dataTransfer.getData('text/plain'); if(text)makeItem(/^https?:\/\//.test(text)?'link':'message', {
+                ...coords(e), content:escapeHTML(text)
+            } )
+        }
+    } ); document.querySelector('#paperAddText').onclick=()=>makeItem('text', {
+        content:'<div>Mein Tagebuch – hier hineinschreiben …</div>'
+    } ); document.querySelector('#paperAddMsg').onclick=()=> {
+        const t=prompt('WhatsApp-Nachricht oder Text einfügen (Kopieren/Einfügen):'); if(t)makeItem('message', {
+            content:escapeHTML(t)
+        } )
+    } ; document.querySelector('#paperImportNotes').onclick=()=> {
+        let notes=[]; try {
+            notes=JSON.parse(localStorage.getItem('midnight.notes.v5')||'[]')
+        } catch {
+        } if(!notes.length)return status('Der Notizblock ist noch leer'); const content=notes.map(n=>'<div>☐ '+escapeHTML(n.text)+'</div>').join(''); makeItem('text', {
+            content, width:440, height:280
+        } ); status(notes.length+' Notizen als Tagebucheintrag übernommen')
+    } ; document.querySelector('#paperAddLink').onclick=()=> {
+        const t=prompt('Webadresse (https://...)'); if(t&&/^https?:\/\//i.test(t))makeItem('link', {
+            content:t
+        } )
+    } ; document.querySelector('#paperAddFiles').onclick=()=>pick.click(); pick.addEventListener('change', async()=> {
+        await filesAt([...pick.files], {
+            x:100+Math.random()*90, y:100+Math.random()*90
+        } ); pick.value=''
+    } ); // Bild in aktuell fokussierten Textblock setzen; der Text fließt um das links schwebende Foto.
+    document.querySelector('#paperFloatImg').onclick=async()=> {
+        let target=canvas.querySelector('.paper-item[data-id="'+lastTextItem+'"]'); if(!target||!['text', 'message'].includes(items.find(i=>i.id===target.dataset.id)?.kind)) {
+            status('Zuerst in eine Textnotiz klicken'); return
+        }
+const body=target.querySelector('[contenteditable]'); const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.accept='image/*'; fileInput.onchange=async()=> {
+            if(!fileInput.files[0])return; const f=fileInput.files[0]; try {
+                let r=await fetch('/api/upload?name='+encodeURIComponent(f.name), {
+                    method:'POST', headers: {
+                        'Content-Type':f.type
+                    } , body:f
+                } ); if(!r.ok)throw Error('Upload fehlgeschlagen'); const m=await r.json(); const img=document.createElement('img'); img.src=media(m.id); img.className='float-left'; img.alt=f.name; body.prepend(img); const it=items.find(i=>i.id===target.dataset.id); it.content=sanitize(body.innerHTML); persist(it)
+            } catch(e) {
+                status(e.message)
+            }
+        } ; fileInput.click()
+    } ; dayInput.onchange=()=> {
+        window.paperAPI?.chooseDate?.(dayInput.value); openDate(dayInput.value)
+    } ; document.querySelector('#paperPrev').onclick=()=>shift(-1); document.querySelector('#paperNext').onclick=()=>shift(1); function shift(dir) {
+        const d=new Date(day+'T12:00:00'); d.setDate(d.getDate()+dir); const next=[d.getFullYear(), String(d.getMonth()+1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-'); window.paperAPI?.chooseDate?.(next); openDate(next)
+    }
+window.Paper= {
+        activate(on, selected) {
+            active=on; root.classList.toggle('active', on); document.body.classList.toggle('paper-mode', on); if(on&&selected!==day)openDate(selected)
+        }
+    } ;
+} )();
